@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: campuscare-backend
+    env: node
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: PORT
+        value: 5000
+      - key: JWT_SECRET
+        value: campuscare_super_secret_jwt_key_2026_secure
+      - key: ADMIN_EMAIL
+        value: admin@college.edu
+      - key: ADMIN_PASSWORD
+        value: admin123

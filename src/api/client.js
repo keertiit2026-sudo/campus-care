@@ -1,0 +1,310 @@
+const rawBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = rawBaseUrl.endsWith('/') ? rawBaseUrl.slice(0, -1) : rawBaseUrl;
+
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('campuscare_jwt_token');
+  return {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {})
+  };
+};
+
+export const api = {
+  // --- Auth API ---
+  async register(data) {
+    const res = await fetch(`${API_BASE_URL}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Registration failed');
+    return json;
+  },
+
+  async login(identifier, password) {
+    const res = await fetch(`${API_BASE_URL}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ identifier, email: identifier, password })
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Login failed');
+    return json;
+  },
+
+  async getMe() {
+    const res = await fetch(`${API_BASE_URL}/auth/me`, {
+      headers: getAuthHeaders()
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Failed to fetch session profile');
+    return json;
+  },
+
+  // --- Complaints API ---
+  async getComplaints(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    const res = await fetch(`${API_BASE_URL}/complaints?${query}`, {
+      headers: getAuthHeaders()
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Failed to fetch complaints');
+    return json.complaints || [];
+  },
+
+  async createComplaint(data) {
+    const res = await fetch(`${API_BASE_URL}/complaints`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data)
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Failed to submit complaint');
+    return json.complaint;
+  },
+
+  async getComplaintById(id) {
+    const res = await fetch(`${API_BASE_URL}/complaints/${id}`, {
+      headers: getAuthHeaders()
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Failed to fetch complaint');
+    return json.complaint;
+  },
+
+  async triageComplaint(id, data) {
+    const res = await fetch(`${API_BASE_URL}/complaints/${id}/triage`, {
+      method: 'PATCH',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data)
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Failed to update complaint triage');
+    return json.complaint;
+  },
+
+  async addComment(id, message, isInternal = false) {
+    const res = await fetch(`${API_BASE_URL}/complaints/${id}/comments`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ message, isInternal })
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Failed to post comment');
+    return json.complaint;
+  },
+
+  async submitRating(id, rating, feedback) {
+    const res = await fetch(`${API_BASE_URL}/complaints/${id}/rating`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ rating, feedback })
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Failed to submit rating');
+    return json.complaint;
+  },
+
+  // --- Departments & Staff ---
+  async getDepartments() {
+    const res = await fetch(`${API_BASE_URL}/departments`, {
+      headers: getAuthHeaders()
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Failed to fetch departments');
+    return json.departments || [];
+  },
+
+  async updateDepartment(id, data) {
+    const res = await fetch(`${API_BASE_URL}/departments/${id}`, {
+      method: 'PATCH',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data)
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Failed to update department');
+    return json.department;
+  },
+
+  async getStaff(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    const res = await fetch(`${API_BASE_URL}/staff?${query}`, {
+      headers: getAuthHeaders()
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Failed to fetch staff');
+    return json.staff || [];
+  },
+
+  async getStaffById(id) {
+    const res = await fetch(`${API_BASE_URL}/staff/${id}`, {
+      headers: getAuthHeaders()
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Failed to fetch staff member');
+    return json.staff;
+  },
+
+  async getStaffOpenTickets(id) {
+    const res = await fetch(`${API_BASE_URL}/staff/${id}/open-tickets`, {
+      headers: getAuthHeaders()
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Failed to fetch staff open tickets');
+    return json;
+  },
+
+  async createStaff(data) {
+    const res = await fetch(`${API_BASE_URL}/staff`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data)
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Failed to add staff member');
+    return json.staff;
+  },
+
+  async updateStaff(id, data) {
+    const res = await fetch(`${API_BASE_URL}/staff/${id}`, {
+      method: 'PATCH',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data)
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Failed to update staff member');
+    return json.staff;
+  },
+
+  async replaceAndTransferStaff(data) {
+    const res = await fetch(`${API_BASE_URL}/staff/replace`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data)
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Failed to replace staff and transfer tickets');
+    return json;
+  },
+
+  async replaceStaff(data) {
+    return this.replaceAndTransferStaff(data);
+  },
+
+  async deactivateStaff(id, options = {}) {
+    const res = await fetch(`${API_BASE_URL}/staff/${id}/deactivate`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(options)
+    });
+    const json = await res.json();
+    if (!res.ok) {
+      const err = new Error(json.error || 'Failed to deactivate staff member');
+      err.openCount = json.openCount;
+      err.openTickets = json.openTickets;
+      throw err;
+    }
+    return json;
+  },
+
+  async reactivateStaff(id) {
+    const res = await fetch(`${API_BASE_URL}/staff/${id}/reactivate`, {
+      method: 'POST',
+      headers: getAuthHeaders()
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Failed to reactivate staff member');
+    return json;
+  },
+
+  async deleteStaff(id, transferToStaffId = null) {
+    const query = transferToStaffId ? `?transferToStaffId=${transferToStaffId}` : '';
+    const res = await fetch(`${API_BASE_URL}/staff/${id}${query}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders()
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Failed to remove staff member');
+    return json;
+  },
+
+  // --- Analytics ---
+  async getAnalytics() {
+    const res = await fetch(`${API_BASE_URL}/analytics`, {
+      headers: getAuthHeaders()
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Failed to fetch analytics');
+    return json.stats;
+  },
+
+  // --- CampusCare Intelligence ---
+  async getIntelligenceSummary() {
+    const res = await fetch(`${API_BASE_URL}/intelligence/summary`, {
+      headers: getAuthHeaders()
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.message || 'Failed to fetch intelligence summary');
+    return json.data;
+  },
+
+  async getHeatmapData(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    const res = await fetch(`${API_BASE_URL}/intelligence/heatmap?${query}`, {
+      headers: getAuthHeaders()
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.message || 'Failed to fetch heatmap data');
+    return json.data;
+  },
+
+  async getIntelligenceAlerts() {
+    const res = await fetch(`${API_BASE_URL}/intelligence/alerts`, {
+      headers: getAuthHeaders()
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.message || 'Failed to fetch intelligence alerts');
+    return json.data?.alerts || [];
+  },
+
+  async getSimilarComplaints(id) {
+    const res = await fetch(`${API_BASE_URL}/intelligence/similar/${id}`, {
+      headers: getAuthHeaders()
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.message || 'Failed to fetch similar complaints');
+    return json.data;
+  },
+
+  async analyzeComplaintDraft(data) {
+    const res = await fetch(`${API_BASE_URL}/intelligence/analyze`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data)
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.message || 'Failed to analyze complaint draft');
+    return json.data;
+  },
+
+  async getBuildingIntelligence(idOrName) {
+    const res = await fetch(`${API_BASE_URL}/intelligence/building/${encodeURIComponent(idOrName)}`, {
+      headers: getAuthHeaders()
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.message || 'Failed to fetch building details');
+    return json.data;
+  },
+
+  async linkComplaints(primaryComplaintId, linkedComplaintId, linkType = 'duplicate') {
+    const res = await fetch(`${API_BASE_URL}/intelligence/link-complaints`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ primaryComplaintId, linkedComplaintId, linkType })
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.message || 'Failed to link complaints');
+    return json;
+  }
+};

@@ -1,0 +1,154 @@
+# Software Design Document (SDD)
+## Project Name: CampusCare - Smart Campus Grievance & Complaint Redressal System
+
+---
+
+## 1. Introduction
+
+### 1.1 Purpose
+The purpose of this Software Design Document (SDD) is to provide a comprehensive architectural, structural, and behavioral overview of the **CampusCare** platform. It describes the design decisions, component architectures, database schemas, interfaces, and deployment strategies implemented for the system.
+
+### 1.2 Scope
+CampusCare is a centralized web-based complaint management and analytics system designed for higher education institutions. It enables students to report campus issues (Hostel, Academic, Wi-Fi, Infrastructure, Canteen, Transport), track grievance lifecycles in real-time, rate resolutions, and access transparent redressal workflows. It equips campus administrators and departmental staff with automated categorization, priority assignment, SLA monitoring, and analytical reporting.
+
+### 1.3 Target Audience
+- **College Examiners & Evaluators**: For project assessment, viva evaluation, and architectural review.
+- **System Developers & Maintainers**: For codebase maintenance, enhancements, and API integration.
+- **Campus Administrators**: For understanding security protocols, role hierarchies, and escalation workflows.
+
+---
+
+## 2. System Architecture
+
+CampusCare follows a clean **Client-Server (3-Tier)** architecture with RESTful communication:
+
+```
++-------------------------------------------------------------------------+
+|                        PRESENTATION TIER (Frontend)                     |
+|  React 18 + Vite | TailwindCSS / Vanilla CSS | Lucide Icons | Chart.js  |
+|  - Student Portal: Dashboard, New Ticket, Track Status, Star Rating     |
+|  - Staff Portal: Task Queue, Priority Updates, Resolution Notes         |
+|  - Admin Portal: Department Overview, Staff Assignment, Analytics Export|
++------------------------------------+------------------------------------+
+                                     |
+                                     | HTTPS / JSON (REST API)
+                                     v
++-------------------------------------------------------------------------+
+|                        APPLICATION TIER (Backend API)                   |
+|  Node.js + Express.js Engine                                            |
+|  - Auth Middleware: JWT Token Verification & RBAC                       |
+|  - Complaint Engine: Smart Triage, Status State Machine, SLA Counter    |
+|  - Analytics Service: Departmental Breakdown, Resolution Rates, Export  |
++------------------------------------+------------------------------------+
+                                     |
+                                     | CRUD & Index Queries
+                                     v
++-------------------------------------------------------------------------+
+|                           DATA TIER (Storage)                           |
+|  JSON Database / MongoDB Atlas Document Store                           |
+|  - Collections: Users, Complaints, Departments, Audit Logs              |
++-------------------------------------------------------------------------+
+```
+
+---
+
+## 3. Core Modules & Functionalities
+
+### 3.1 Student Portal Module
+- **Authentication**: Email/Student ID login with password hashing.
+- **Complaint Submission**: Multi-category selection with file attachments, severity level, location tags, and description.
+- **My Tickets View**: Filtered complaint listing isolated to the authenticated student (`/complaints/my`).
+- **Campus Complaints Hub**: Read-only public transparency feed of all campus tickets (`/complaints`).
+- **Feedback & Ratings**: 1-5 star satisfaction rating and remarks submission upon ticket closure.
+
+### 3.2 Staff Redressal Module
+- **Assigned Work Queue**: Filtered list of tickets assigned to the logged-in staff member's department.
+- **Status Lifecycle Transitions**: Step-by-step state machine updates (`Submitted` → `Under Review` → `In Progress` → `Resolved` → `Closed`).
+- **Resolution Proofs**: Attachment uploads and detailed resolution notes submitted to students.
+
+### 3.3 Admin & Governance Module
+- **System Dashboard**: Live KPI cards (Total Tickets, In Progress, Resolved Rate, Escalations).
+- **Staff Workload Allocation**: Reassign tickets between staff members with automatic department sync.
+- **Export Analytics**: 1-click export of system audit records and performance reports in `.xlsx` and `.pdf` formats.
+- **Role-Based Clearance**: Guarded routes preventing unauthorized privilege escalations.
+
+---
+
+## 4. Complaint State Machine
+
+```
+[ Submitted ]
+      │
+      ▼ (Staff Acknowledged)
+[ Under Review ]
+      │
+      ▼ (Assigned to Technician)
+[ In Progress ]
+      │
+      ▼ (Resolution Note + Evidence Provided)
+[ Resolved ]
+      │
+      ▼ (Student Verified / Auto-Closed)
+[ Closed ] ──> (Student Satisfaction Rating 1-5 ★)
+```
+
+---
+
+## 5. Data Schema & Dictionary
+
+### 5.1 User Entity (`User`)
+| Field | Type | Description | Example |
+| :--- | :--- | :--- | :--- |
+| `id` | `String` (PK) | Unique User ID | `usr_student_1` |
+| `name` | `String` | Full Name | `"Priya Sharma"` |
+| `email` | `String` (Unique) | College Email | `"priya.sharma@college.edu"` |
+| `role` | `Enum` | Authorization Level | `"student" \| "staff" \| "admin"` |
+| `department` | `String` | Department Tag | `"Computer Science"` |
+| `studentId` | `String` | University Roll ID | `"STU-2024-8841"` |
+
+### 5.2 Complaint Entity (`Complaint`)
+| Field | Type | Description | Example |
+| :--- | :--- | :--- | :--- |
+| `id` | `String` (PK) | Unique Complaint ID | `cmp_1001` |
+| `title` | `String` | Complaint Heading | `"Wi-Fi Disconnection in Lab 3"` |
+| `category` | `Enum` | Issue Category | `"Wi-Fi" \| "Hostel" \| "Lab" \| ...` |
+| `priority` | `Enum` | Urgency Level | `"Low" \| "Medium" \| "High" \| "Critical"` |
+| `status` | `Enum` | Current State | `"Submitted" \| "In Progress" \| "Resolved"` |
+| `studentId` | `String` (FK) | Submitting User ID | `usr_student_1` |
+| `assignedTo` | `String` (FK) | Assigned Staff ID | `usr_staff_2` |
+| `createdAt` | `DateTime` | Timestamp of Filing | `2026-09-20T10:15:00Z` |
+| `rating` | `Number` | Student Feedback | `5` |
+
+---
+
+## 6. REST API Specifications
+
+| Method | Endpoint | Access | Purpose |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/v1/auth/login` | Public | Authenticate user & return JWT token |
+| `GET` | `/api/v1/auth/me` | Authenticated | Retrieve current session profile |
+| `GET` | `/api/v1/complaints` | Authenticated | List campus complaints (Supports search & filter) |
+| `GET` | `/api/v1/complaints/my` | Student | List tickets submitted by current student |
+| `POST` | `/api/v1/complaints` | Student | Create new grievance record |
+| `PATCH` | `/api/v1/complaints/:id` | Staff / Admin | Update ticket status, priority, or staff |
+| `POST` | `/api/v1/complaints/:id/rate` | Student | Submit 1-5 star resolution rating |
+| `GET` | `/api/v1/analytics/stats` | Admin | Get summary metrics and department counters |
+
+---
+
+## 7. Security & Non-Functional Requirements
+
+1. **Role-Based Access Control (RBAC)**: Enforced both on the client via React Router guards and on the backend via Express middleware.
+2. **Data Integrity**: Input validation on complaint payloads; strict validation preventing resolution without explanatory notes.
+3. **Responsive UI**: Optimized for mobile phones (375px+), tablets, and widescreen desktop monitors (1920px+).
+4. **Offline Resilience**: Local JSON database fallback allowing instant local demonstrations without external network dependency.
+
+---
+
+## 8. Deployment & Execution Summary
+
+- **1-Click Local Execution**: Run `start_campuscare.bat` on Windows to launch backend, frontend, and open browser automatically.
+- **Production Cloud Options**:
+  - **Frontend**: Deployable on Netlify / Vercel (`dist/` folder, SPA redirect configured via `netlify.toml` / `vercel.json`).
+  - **Backend**: Deployable on Render / Railway using `render.yaml` and Node.js runtime.
+- **Direct Live Tunnel**: Active localtunnel support (`npx localtunnel --port 5173`) for mobile testing without cloud registration.

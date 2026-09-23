@@ -1,0 +1,1501 @@
+{
+  "users": [
+    {
+      "id": "usr_admin_1",
+      "name": "Dean Sarah Jenkins",
+      "email": "admin@college.edu",
+      "passwordHash": "$2b$10$eEmJ2QBbUPVjbHLg8cvvpecbEwfHadbdogMcthfs.iFXmHlucO7He",
+      "role": "admin",
+      "designation": "Dean of Campus Infrastructure & Student Welfare",
+      "department": "Campus Administration",
+      "avatar": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80",
+      "createdAt": "2026-09-21T13:44:28.189Z"
+    },
+    {
+      "id": "usr_student_1",
+      "name": "Priya Sharma",
+      "email": "priya.sharma@college.edu",
+      "passwordHash": "$2b$10$eEmJ2QBbUPVjbHLg8cvvpeXbyCEOeJdJsZyaRIUeUWWDo5GlTgSYO",
+      "role": "student",
+      "studentId": "STU-2024-8841",
+      "department": "Computer Science & Engineering",
+      "year": "3rd Year (Semester 5)",
+      "hostel": "Gargi Hall, Room 314",
+      "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+      "createdAt": "2026-09-21T13:44:28.529Z"
+    },
+    {
+      "id": "usr_stu_1789998395896",
+      "name": "Test Student",
+      "email": "test.student@college.edu",
+      "passwordHash": "$2b$10$NZOU4piGO669duRwLx.nQOHTMCIDKTIcREqh70xZbH7c9cTFVRZmG",
+      "role": "student",
+      "studentId": "STU-2026-9999",
+      "department": "Computer Science",
+      "year": "2nd Year",
+      "hostel": "Block A",
+      "avatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=Test%20Student",
+      "createdAt": "2026-09-21T13:46:35.897Z"
+    },
+    {
+      "id": "usr_stu_1790044542789",
+      "name": "kerti",
+      "email": "jcer@2026",
+      "passwordHash": "$2b$10$Nz35IJpcbLMjj.RlkYPMqeyT2V/ogVRkaBAD9bw/zhmj/RKlClpni",
+      "role": "student",
+      "studentId": "cs2025035",
+      "department": "Computer Science & Engineering",
+      "year": "1st Year",
+      "hostel": "Day Scholar",
+      "avatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=kerti",
+      "createdAt": "2026-09-22T02:35:42.789Z"
+    },
+    {
+      "id": "usr_staff_1",
+      "name": "Alex Chen",
+      "email": "alex.chen@college.edu",
+      "passwordHash": "$2b$10$BF9Z9GhoZLTq5/zfAzgN.ek0x87.WApaDnyOQktCJMytmU0YF6w5G",
+      "role": "staff",
+      "status": "inactive",
+      "departmentId": "it_services",
+      "department": "IT Services & Network Infrastructure",
+      "roleTitle": "IT Infrastructure Lead",
+      "phone": "+1 (555) 019-2831",
+      "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
+      "joinedAt": "2025-08-01T09:00:00.000Z",
+      "createdAt": "2025-08-01T09:00:00.000Z",
+      "leftAt": "2026-09-23T11:21:14.855Z",
+      "resignationReason": "Staff resignation - relocating abroad",
+      "employeeId": "EMP-2024-001",
+      "categoryResponsibility": "general",
+      "campusZone": "Main Campus"
+    },
+    {
+      "id": "usr_staff_2",
+      "name": "Devin Thorne",
+      "email": "devin.thorne@college.edu",
+      "passwordHash": "$2b$10$BF9Z9GhoZLTq5/zfAzgN.ek0x87.WApaDnyOQktCJMytmU0YF6w5G",
+      "role": "staff",
+      "status": "inactive",
+      "departmentId": "it_services",
+      "department": "IT Services & Network Infrastructure",
+      "roleTitle": "Network Systems Admin",
+      "phone": "+1 (555) 019-2832",
+      "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+      "joinedAt": "2025-09-15T09:00:00.000Z",
+      "createdAt": "2025-09-15T09:00:00.000Z",
+      "leftAt": "2026-09-23T13:45:39.251Z",
+      "resignationReason": "Staff resignation / role transition",
+      "employeeId": "EMP-2024-002",
+      "categoryResponsibility": "general",
+      "campusZone": "Main Campus"
+    },
+    {
+      "id": "usr_staff_3",
+      "name": "Rajesh Kumar",
+      "email": "rajesh.kumar@college.edu",
+      "passwordHash": "$2b$10$BF9Z9GhoZLTq5/zfAzgN.ek0x87.WApaDnyOQktCJMytmU0YF6w5G",
+      "role": "staff",
+      "status": "active",
+      "departmentId": "electrical",
+      "department": "Electrical & Power Systems",
+      "roleTitle": "Chief Electrical Supervisor",
+      "phone": "+1 (555) 019-2833",
+      "avatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80",
+      "joinedAt": "2024-05-10T09:00:00.000Z",
+      "createdAt": "2024-05-10T09:00:00.000Z",
+      "employeeId": "EMP-2024-003",
+      "categoryResponsibility": "general",
+      "campusZone": "Main Campus"
+    },
+    {
+      "id": "usr_staff_4",
+      "name": "Siddharth Nair",
+      "email": "siddharth.nair@college.edu",
+      "passwordHash": "$2b$10$BF9Z9GhoZLTq5/zfAzgN.ek0x87.WApaDnyOQktCJMytmU0YF6w5G",
+      "role": "staff",
+      "status": "inactive",
+      "departmentId": "electrical",
+      "department": "Electrical & Power Systems",
+      "roleTitle": "HVAC & Lighting Tech",
+      "phone": "+1 (555) 019-2834",
+      "avatar": "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=150&auto=format&fit=crop&q=80",
+      "joinedAt": "2025-01-20T09:00:00.000Z",
+      "createdAt": "2025-01-20T09:00:00.000Z",
+      "employeeId": "EMP-2024-004",
+      "categoryResponsibility": "general",
+      "campusZone": "Main Campus",
+      "leftAt": "2026-09-23T13:54:32.593Z",
+      "resignationReason": "Staff resignation / role transition"
+    },
+    {
+      "id": "usr_staff_5",
+      "name": "Robert Miller",
+      "email": "robert.miller@college.edu",
+      "passwordHash": "$2b$10$BF9Z9GhoZLTq5/zfAzgN.ek0x87.WApaDnyOQktCJMytmU0YF6w5G",
+      "role": "staff",
+      "status": "left_college",
+      "departmentId": "civil",
+      "department": "Civil Works & Estate Maintenance",
+      "roleTitle": "Senior Civil Engineer",
+      "phone": "+1 (555) 019-2835",
+      "avatar": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80",
+      "joinedAt": "2024-03-12T09:00:00.000Z",
+      "createdAt": "2024-03-12T09:00:00.000Z",
+      "employeeId": "EMP-2024-005",
+      "categoryResponsibility": "general",
+      "campusZone": "Main Campus",
+      "leftAt": "2026-09-23T14:59:34.332Z",
+      "resignationReason": "Staff resignation / role transition"
+    },
+    {
+      "id": "usr_staff_6",
+      "name": "Sunita Rao",
+      "email": "sunita.rao@college.edu",
+      "passwordHash": "$2b$10$BF9Z9GhoZLTq5/zfAzgN.ek0x87.WApaDnyOQktCJMytmU0YF6w5G",
+      "role": "staff",
+      "status": "active",
+      "departmentId": "hostel_admin",
+      "department": "Hostel & Residential Life",
+      "roleTitle": "Hostel Chief Superintendent",
+      "phone": "+1 (555) 019-2836",
+      "avatar": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80",
+      "joinedAt": "2024-07-01T09:00:00.000Z",
+      "createdAt": "2024-07-01T09:00:00.000Z",
+      "employeeId": "EMP-2024-006",
+      "categoryResponsibility": "general",
+      "campusZone": "Main Campus"
+    },
+    {
+      "id": "usr_staff_7",
+      "name": "Maria Gonzalez",
+      "email": "maria.gonzalez@college.edu",
+      "passwordHash": "$2b$10$BF9Z9GhoZLTq5/zfAzgN.ek0x87.WApaDnyOQktCJMytmU0YF6w5G",
+      "role": "staff",
+      "status": "active",
+      "departmentId": "sanitation",
+      "department": "Sanitation & Housekeeping Services",
+      "roleTitle": "Hygiene & Cleanliness Head",
+      "phone": "+1 (555) 019-2837",
+      "avatar": "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&auto=format&fit=crop&q=80",
+      "joinedAt": "2024-11-15T09:00:00.000Z",
+      "createdAt": "2024-11-15T09:00:00.000Z",
+      "employeeId": "EMP-2024-007",
+      "categoryResponsibility": "general",
+      "campusZone": "Main Campus"
+    },
+    {
+      "id": "usr_staff_8",
+      "name": "David Kim",
+      "email": "david.kim@college.edu",
+      "passwordHash": "$2b$10$BF9Z9GhoZLTq5/zfAzgN.ek0x87.WApaDnyOQktCJMytmU0YF6w5G",
+      "role": "staff",
+      "status": "left_college",
+      "departmentId": "transport",
+      "department": "Campus Transportation & Logistics",
+      "roleTitle": "Fleet & Dispatch Officer",
+      "phone": "+1 (555) 019-2838",
+      "avatar": "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&auto=format&fit=crop&q=80",
+      "joinedAt": "2025-02-01T09:00:00.000Z",
+      "createdAt": "2025-02-01T09:00:00.000Z",
+      "employeeId": "EMP-2024-008",
+      "categoryResponsibility": "general",
+      "campusZone": "Main Campus",
+      "leftAt": "2026-09-23T15:00:00.395Z",
+      "resignationReason": "Staff resignation / role transition"
+    },
+    {
+      "id": "usr_staff_1790170125903",
+      "name": "Dr. Evelyn Reed",
+      "email": "evelyn.reed.1790170125782@campuscare.edu",
+      "passwordHash": "$2b$10$xw6V5Ya2vxORPSJ02DnYu.UmEVIPQdX1FDN82lxj49sv5/JMALgzK",
+      "role": "staff",
+      "status": "inactive",
+      "departmentId": "it_services",
+      "department": "IT Services & Network Infrastructure",
+      "roleTitle": "Principal Cloud & Network Architect",
+      "phone": "+1 (555) 019-7722",
+      "avatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=Dr.%20Evelyn%20Reed",
+      "joinedAt": "2026-09-23T13:28:45.903Z",
+      "createdAt": "2026-09-23T13:28:45.903Z",
+      "leftAt": "2026-09-23T13:28:46.026Z",
+      "resignationReason": "Accepted Research Chair position at Stanford",
+      "employeeId": "EMP-2024-5903",
+      "categoryResponsibility": "general",
+      "campusZone": "Main Campus"
+    },
+    {
+      "id": "usr_staff_1790170126021",
+      "name": "Marcus Vance",
+      "email": "marcus.vance.1790170125917@campuscare.edu",
+      "passwordHash": "$2b$10$t2hIKl7Q8hMY7tq22OTd3.Mk18O4Uf1GJKr6IWMlfNU.66EKshata",
+      "role": "staff",
+      "status": "active",
+      "departmentId": "it_services",
+      "department": "IT Services & Network Infrastructure",
+      "roleTitle": "Senior Infrastructure Specialist",
+      "phone": "+1 (555) 019-400",
+      "avatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=Marcus%20Vance",
+      "joinedAt": "2026-09-23T13:28:46.021Z",
+      "createdAt": "2026-09-23T13:28:46.021Z",
+      "leftAt": null,
+      "employeeId": "EMP-2024-6021",
+      "categoryResponsibility": "general",
+      "campusZone": "Main Campus"
+    },
+    {
+      "id": "usr_staff_1790170150601",
+      "employeeId": "EMP-7788",
+      "name": "Dr. Evelyn Reed",
+      "email": "evelyn.reed.1790170150492@campuscare.edu",
+      "passwordHash": "$2b$10$5KzDY97ssb18Ax8h/hXg7OEGGoZqqUzAyL5wAgqFpPsh/hgwT7mhW",
+      "role": "staff",
+      "status": "left_college",
+      "departmentId": "it_services",
+      "department": "IT Services & Network Infrastructure",
+      "roleTitle": "Principal Cloud & Network Architect",
+      "categoryResponsibility": "IT & Campus Network",
+      "campusZone": "Tech Quad Block A & B",
+      "phone": "+1 (555) 019-7722",
+      "avatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=Dr.%20Evelyn%20Reed",
+      "joinedAt": "2026-09-23T13:29:10.601Z",
+      "createdAt": "2026-09-23T13:29:10.601Z",
+      "leftAt": "2026-09-23T13:29:10.748Z",
+      "resignationReason": "Accepted Research Chair position at Stanford"
+    },
+    {
+      "id": "usr_staff_1790170150742",
+      "employeeId": "EMP-9900",
+      "name": "Marcus Vance",
+      "email": "marcus.vance.1790170150610@campuscare.edu",
+      "passwordHash": "$2b$10$.xJAa8AbnMdGA64iXITge.4NP/rt7dhC5jfhoFsJFCesxuiI4SoQ6",
+      "role": "staff",
+      "status": "active",
+      "departmentId": "it_services",
+      "department": "IT Services & Network Infrastructure",
+      "roleTitle": "Senior Infrastructure Specialist",
+      "categoryResponsibility": "general",
+      "campusZone": "Main Campus",
+      "phone": "+1 (555) 019-400",
+      "avatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=Marcus%20Vance",
+      "joinedAt": "2026-09-23T13:29:10.742Z",
+      "createdAt": "2026-09-23T13:29:10.742Z",
+      "leftAt": null,
+      "resignationReason": null
+    },
+    {
+      "id": "usr_staff_1790171530734",
+      "employeeId": "EMP-0734",
+      "name": "Departing Member 0620",
+      "email": "departing.1790171530620@college.edu",
+      "passwordHash": "$2b$10$BG2W2EMGVVPpbxdz1Hsfp.ZWRLEQVaeatfVHfEvqqmmJcIRXlhZKW",
+      "role": "staff",
+      "status": "left_college",
+      "departmentId": "it_services",
+      "department": "IT Services & Network Infrastructure",
+      "roleTitle": "Technician & Maintenance Officer",
+      "categoryResponsibility": "general",
+      "campusZone": "Main Campus",
+      "phone": "+1 (555) 019-400",
+      "avatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=Departing%20Member%200620",
+      "joinedAt": "2026-09-23T13:52:10.734Z",
+      "createdAt": "2026-09-23T13:52:10.734Z",
+      "leftAt": "2026-09-23T13:52:10.857Z",
+      "resignationReason": "Resigned from university"
+    },
+    {
+      "id": "usr_staff_1790171530850",
+      "employeeId": "EMP-0850",
+      "name": "New Successor 0739",
+      "email": "successor.1790171530739@college.edu",
+      "passwordHash": "$2b$10$Lahq.FWbdf8g4PumeqtJ0.x37PEMFH5vgxEfCtBRm/iij3UhNVlrq",
+      "role": "staff",
+      "status": "active",
+      "departmentId": "it_services",
+      "department": "IT Services & Network Infrastructure",
+      "roleTitle": "Technician & Maintenance Officer",
+      "categoryResponsibility": "general",
+      "campusZone": "Main Campus",
+      "phone": "+1 (555) 019-400",
+      "avatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=New%20Successor%200739",
+      "joinedAt": "2026-09-23T13:52:10.850Z",
+      "createdAt": "2026-09-23T13:52:10.850Z"
+    },
+    {
+      "id": "usr_student_2",
+      "name": "Rahul Verma",
+      "email": "rahul.verma@college.edu",
+      "passwordHash": "$2b$10$eEmJ2QBbUPVjbHLg8cvvpeXbyCEOeJdJsZyaRIUeUWWDo5GlTgSYO",
+      "role": "student",
+      "studentId": "STU-2024-9102",
+      "department": "Mechanical Engineering",
+      "year": "3rd Year",
+      "hostel": "Campus Residence",
+      "avatar": "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80",
+      "createdAt": "2026-09-21T13:44:28.529Z"
+    },
+    {
+      "id": "usr_student_3",
+      "name": "Ananya Patel",
+      "email": "ananya.patel@college.edu",
+      "passwordHash": "$2b$10$eEmJ2QBbUPVjbHLg8cvvpeXbyCEOeJdJsZyaRIUeUWWDo5GlTgSYO",
+      "role": "student",
+      "studentId": "STU-2024-4421",
+      "department": "Electrical & Power Systems",
+      "year": "3rd Year",
+      "hostel": "Campus Residence",
+      "avatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
+      "createdAt": "2026-09-21T13:44:28.529Z"
+    },
+    {
+      "id": "usr_student_4",
+      "name": "Rohan Gupta",
+      "email": "rohan.gupta@college.edu",
+      "passwordHash": "$2b$10$eEmJ2QBbUPVjbHLg8cvvpeXbyCEOeJdJsZyaRIUeUWWDo5GlTgSYO",
+      "role": "student",
+      "studentId": "STU-2024-7719",
+      "department": "Civil Engineering",
+      "year": "3rd Year",
+      "hostel": "Campus Residence",
+      "avatar": "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&auto=format&fit=crop&q=80",
+      "createdAt": "2026-09-21T13:44:28.529Z"
+    },
+    {
+      "id": "usr_student_5",
+      "name": "Sneha Reddy",
+      "email": "sneha.reddy@college.edu",
+      "passwordHash": "$2b$10$eEmJ2QBbUPVjbHLg8cvvpeXbyCEOeJdJsZyaRIUeUWWDo5GlTgSYO",
+      "role": "student",
+      "studentId": "STU-2024-3390",
+      "department": "Information Technology",
+      "year": "3rd Year",
+      "hostel": "Campus Residence",
+      "avatar": "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80",
+      "createdAt": "2026-09-21T13:44:28.529Z"
+    }
+  ],
+  "complaints": [
+    {
+      "id": "CMP-2026-3103",
+      "title": "wash room problus",
+      "description": "the hostel wash room flesh is not workingrirjifdkxdmfx g",
+      "category": "hostel",
+      "priority": "medium",
+      "status": "Submitted",
+      "location": "hostel campus of jcer → 1st Floor → 206 (Rani Chennamma Nagar, Belagavi, Karnataka, India)",
+      "manualLocation": {
+        "building": "hostel campus of jcer",
+        "floor": "1st Floor",
+        "roomOrSpot": "206",
+        "additionalDetails": ""
+      },
+      "gpsLocation": {
+        "address": "Rani Chennamma Nagar, Belagavi, Karnataka, India"
+      },
+      "floorLevel": "1st Floor",
+      "student": {
+        "id": "usr_student_1",
+        "name": "Priya Sharma",
+        "studentId": "STU-2024-8841",
+        "email": "priya.sharma@college.edu",
+        "department": "Computer Science & Engineering",
+        "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"
+      },
+      "createdAt": "2026-09-23T16:32:00.809Z",
+      "updatedAt": "2026-09-23T16:32:00.809Z",
+      "assignedDepartment": null,
+      "assignedStaff": null,
+      "attachments": [],
+      "statusHistory": [
+        {
+          "id": "sh-1790181120809",
+          "fromStatus": null,
+          "toStatus": "Submitted",
+          "changedBy": "Priya Sharma (student)",
+          "timestamp": "2026-09-23T16:32:00.809Z",
+          "note": "Complaint registered by student"
+        }
+      ],
+      "comments": [],
+      "resolutionNotes": null,
+      "resolutionPhoto": null,
+      "resolvedAt": null,
+      "rating": null,
+      "feedback": null,
+      "intelligence": {
+        "analyzed": true,
+        "suggestedCategory": "hostel",
+        "suggestedPriority": "high",
+        "suggestedDepartmentId": "hostel_admin",
+        "suggestedDepartmentName": "Hostel & Residential Life",
+        "suggestedStaffId": "usr_staff_6",
+        "suggestedStaffName": "Sunita Rao",
+        "confidence": 0.65,
+        "reasons": [
+          "Detected signals matching HOSTEL keywords in problem description.",
+          "Equipment or system is completely inoperable"
+        ],
+        "analyzedAt": "2026-09-23T16:32:00.809Z"
+      }
+    },
+    {
+      "id": "CMP-2026-9193",
+      "title": "wifi is not working correctly so student are unable to work on pc",
+      "description": "wifi issue in  computer lab",
+      "category": "it_wifi",
+      "priority": "urgent",
+      "status": "Resolved",
+      "location": "jcer campus → 3rd Floor → 201 lab (Rani Chennamma Nagar, Belagavi, Karnataka, India)",
+      "manualLocation": {
+        "building": "jcer campus",
+        "floor": "3rd Floor",
+        "roomOrSpot": "201 lab",
+        "additionalDetails": "udyambag"
+      },
+      "gpsLocation": {
+        "address": "Rani Chennamma Nagar, Belagavi, Karnataka, India"
+      },
+      "floorLevel": "3rd Floor",
+      "student": {
+        "id": "usr_student_1",
+        "name": "Priya Sharma",
+        "studentId": "STU-2024-8841",
+        "email": "priya.sharma@college.edu",
+        "department": "Computer Science & Engineering",
+        "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"
+      },
+      "createdAt": "2026-09-23T11:02:20.440Z",
+      "updatedAt": "2026-09-23T15:02:28.152Z",
+      "assignedDepartment": "it_services",
+      "assignedStaff": "usr_staff_1",
+      "attachments": [],
+      "statusHistory": [
+        {
+          "id": "sh-1790161340440",
+          "fromStatus": null,
+          "toStatus": "Submitted",
+          "changedBy": "Priya Sharma (student)",
+          "timestamp": "2026-09-23T11:02:20.440Z",
+          "note": "Complaint registered by student"
+        },
+        {
+          "id": "sh-1790161525919",
+          "fromStatus": "Submitted",
+          "toStatus": "Resolved",
+          "changedBy": "Dean Sarah Jenkins (admin)",
+          "timestamp": "2026-09-23T11:05:25.919Z",
+          "note": "Triage update processed by Dean Sarah Jenkins"
+        }
+      ],
+      "comments": [],
+      "resolutionNotes": "so i solved ur problem",
+      "resolutionPhoto": null,
+      "resolvedAt": "2026-09-23T15:02:28.151Z",
+      "rating": null,
+      "feedback": null,
+      "intelligence": {
+        "analyzed": true,
+        "suggestedCategory": "wifi_it",
+        "suggestedPriority": "high",
+        "suggestedDepartmentId": "it_services",
+        "suggestedDepartmentName": "IT Services & Network Infrastructure",
+        "suggestedStaffId": "usr_staff_1",
+        "suggestedStaffName": "Alex Chen",
+        "confidence": 0.65,
+        "reasons": [
+          "Detected signals matching WIFI IT keywords in problem description.",
+          "Equipment or system is completely inoperable"
+        ],
+        "analyzedAt": "2026-09-23T11:02:20.445Z"
+      }
+    },
+    {
+      "id": "CMP-2026-1019",
+      "title": "DNS Resolution Glitch on Campus Guest SSID",
+      "description": "Captive portal redirection failing for visitor devices on 10.40.0.0/16 subnet.",
+      "category": "wifi_it",
+      "priority": "medium",
+      "status": "Closed",
+      "location": "Administrative Block → Visitor Lobby",
+      "student": {
+        "id": "usr_student_5",
+        "name": "Sneha Reddy",
+        "studentId": "STU-2024-3390",
+        "email": "sneha.reddy@college.edu",
+        "department": "Information Technology",
+        "avatar": "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80"
+      },
+      "createdAt": "2026-09-16T10:51:04.135Z",
+      "updatedAt": "2026-09-17T10:51:04.135Z",
+      "assignedDepartment": "it_services",
+      "assignedStaff": "usr_staff_1",
+      "attachments": [],
+      "statusHistory": [
+        {
+          "id": "sh-1019-1",
+          "fromStatus": null,
+          "toStatus": "Submitted",
+          "changedBy": "Sneha Reddy (student)",
+          "timestamp": "2026-09-16T10:51:04.135Z",
+          "note": "Registered"
+        },
+        {
+          "id": "sh-1019-2",
+          "fromStatus": "Submitted",
+          "toStatus": "Resolved",
+          "changedBy": "Alex Chen (staff)",
+          "timestamp": "2026-09-17T10:51:04.135Z",
+          "note": "Updated DNS forwarders and flushed BIND cache"
+        },
+        {
+          "id": "sh-1019-3",
+          "fromStatus": "Resolved",
+          "toStatus": "Closed",
+          "changedBy": "Dean Sarah Jenkins (admin)",
+          "timestamp": "2026-09-17T10:51:04.135Z",
+          "note": "Closed"
+        }
+      ],
+      "comments": [],
+      "resolutionNotes": "Updated DNS forwarders in firewall policy and flushed BIND cache on primary name server.",
+      "resolutionPhoto": null,
+      "resolvedAt": "2026-09-17T10:51:04.135Z",
+      "rating": 4,
+      "feedback": null
+    },
+    {
+      "id": "CMP-2026-1015",
+      "title": "Optical Fiber Break on South Wing Link",
+      "description": "Single-mode fiber patch cord damaged during HVAC duct maintenance.",
+      "category": "wifi_it",
+      "priority": "high",
+      "status": "Resolved",
+      "location": "South Academic Wing → 2nd Floor Distribution Riser",
+      "student": {
+        "id": "usr_student_5",
+        "name": "Sneha Reddy",
+        "studentId": "STU-2024-3390",
+        "email": "sneha.reddy@college.edu",
+        "department": "Information Technology",
+        "avatar": "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80"
+      },
+      "createdAt": "2026-09-13T10:51:04.135Z",
+      "updatedAt": "2026-09-14T10:51:04.135Z",
+      "assignedDepartment": "it_services",
+      "assignedStaff": "usr_staff_1",
+      "attachments": [],
+      "statusHistory": [
+        {
+          "id": "sh-1015-1",
+          "fromStatus": null,
+          "toStatus": "Submitted",
+          "changedBy": "Sneha Reddy (student)",
+          "timestamp": "2026-09-13T10:51:04.135Z",
+          "note": "Registered"
+        },
+        {
+          "id": "sh-1015-2",
+          "fromStatus": "Submitted",
+          "toStatus": "Resolved",
+          "changedBy": "Alex Chen (staff)",
+          "timestamp": "2026-09-14T10:51:04.135Z",
+          "note": "Fusion spliced broken fiber core and verified 0.02dB loss"
+        }
+      ],
+      "comments": [],
+      "resolutionNotes": "Fusion spliced broken fiber core and verified 0.02dB loss with OTDR meter.",
+      "resolutionPhoto": null,
+      "resolvedAt": "2026-09-14T10:51:04.135Z",
+      "rating": 5,
+      "feedback": "Excellent technical work."
+    },
+    {
+      "id": "CMP-2026-1011",
+      "title": "Server Room UPS Alarm Beeping",
+      "description": "Secondary battery string was triggering voltage threshold buzzer.",
+      "category": "wifi_it",
+      "priority": "urgent",
+      "status": "Closed",
+      "location": "Tech Hub Building → Basement → Main Server Room",
+      "student": {
+        "id": "usr_student_4",
+        "name": "Rohan Gupta",
+        "studentId": "STU-2024-7719",
+        "email": "rohan.gupta@college.edu",
+        "department": "Civil Engineering",
+        "avatar": "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&auto=format&fit=crop&q=80"
+      },
+      "createdAt": "2026-09-09T10:51:04.135Z",
+      "updatedAt": "2026-09-11T10:51:04.135Z",
+      "assignedDepartment": "it_services",
+      "assignedStaff": "usr_staff_1",
+      "attachments": [],
+      "statusHistory": [
+        {
+          "id": "sh-1011-1",
+          "fromStatus": null,
+          "toStatus": "Submitted",
+          "changedBy": "Rohan Gupta (student)",
+          "timestamp": "2026-09-09T10:51:04.135Z",
+          "note": "Complaint registered"
+        },
+        {
+          "id": "sh-1011-2",
+          "fromStatus": "Submitted",
+          "toStatus": "Resolved",
+          "changedBy": "Alex Chen (staff)",
+          "timestamp": "2026-09-10T10:51:04.135Z",
+          "note": "Replaced lead acid battery module cell 4"
+        },
+        {
+          "id": "sh-1011-3",
+          "fromStatus": "Resolved",
+          "toStatus": "Closed",
+          "changedBy": "Dean Sarah Jenkins (admin)",
+          "timestamp": "2026-09-11T10:51:04.135Z",
+          "note": "Verified by facility management"
+        }
+      ],
+      "comments": [],
+      "resolutionNotes": "Replaced lead acid battery module cell 4 and load tested to 45kW successfully.",
+      "resolutionPhoto": null,
+      "resolvedAt": "2026-09-10T10:51:04.135Z",
+      "rating": 5,
+      "feedback": "Fast response to critical infrastructure warning."
+    },
+    {
+      "id": "CMP-2026-1041",
+      "title": "Router issue in Faculty Block C",
+      "description": "Access Point AP-FB-C1 is broadcasting no signal after power surge.",
+      "category": "wifi_it",
+      "priority": "medium",
+      "status": "Assigned",
+      "location": "Faculty Block C → 1st Floor → Corridor AP",
+      "student": {
+        "id": "usr_student_1",
+        "name": "Priya Sharma",
+        "studentId": "STU-2024-8841",
+        "email": "priya.sharma@college.edu",
+        "department": "Computer Science & Engineering",
+        "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"
+      },
+      "createdAt": "2026-09-23T02:51:04.135Z",
+      "updatedAt": "2026-09-23T13:45:39.251Z",
+      "assignedDepartment": "it_services",
+      "assignedStaff": "usr_staff_1790170126021",
+      "attachments": [],
+      "statusHistory": [
+        {
+          "id": "sh-1041-1",
+          "fromStatus": null,
+          "toStatus": "Submitted",
+          "changedBy": "Priya Sharma (student)",
+          "timestamp": "2026-09-23T02:51:04.135Z",
+          "note": "Complaint registered by student"
+        },
+        {
+          "id": "sh-1041-2",
+          "fromStatus": "Submitted",
+          "toStatus": "Assigned",
+          "changedBy": "Dean Sarah Jenkins (admin)",
+          "timestamp": "2026-09-23T06:51:04.135Z",
+          "note": "Assigned to Alex Chen"
+        },
+        {
+          "id": "sh-transfer-1790161677690-mi78x",
+          "fromStatus": "Assigned",
+          "toStatus": "Assigned",
+          "changedBy": "Dean Sarah Jenkins (Admin)",
+          "timestamp": "2026-09-23T11:07:57.690Z",
+          "note": "Staff Transfer: Complaint transferred from Alex Chen to Devin Thorne. Reason: Staff resignation - relocating abroad.",
+          "transferDetails": {
+            "oldStaffId": "usr_staff_1",
+            "oldStaffName": "Alex Chen",
+            "newStaffId": "usr_staff_2",
+            "newStaffName": "Devin Thorne",
+            "reason": "Staff resignation - relocating abroad",
+            "performedBy": "Dean Sarah Jenkins",
+            "timestamp": "2026-09-23T11:07:57.690Z"
+          }
+        },
+        {
+          "id": "sh-transfer-1790161721320-0w507",
+          "fromStatus": "Assigned",
+          "toStatus": "Assigned",
+          "changedBy": "Dean Sarah Jenkins (Admin)",
+          "timestamp": "2026-09-23T11:08:41.320Z",
+          "note": "Staff Transfer: Complaint transferred from Devin Thorne to Alex Chen. Reason: Initial test setup.",
+          "transferDetails": {
+            "oldStaffId": "usr_staff_2",
+            "oldStaffName": "Devin Thorne",
+            "newStaffId": "usr_staff_1",
+            "newStaffName": "Alex Chen",
+            "reason": "Initial test setup",
+            "performedBy": "Dean Sarah Jenkins",
+            "timestamp": "2026-09-23T11:08:41.320Z"
+          }
+        },
+        {
+          "id": "sh-transfer-1790162474855-116i2",
+          "fromStatus": "Assigned",
+          "toStatus": "Assigned",
+          "changedBy": "Dean Sarah Jenkins (Admin)",
+          "timestamp": "2026-09-23T11:21:14.855Z",
+          "note": "Staff Transfer: Complaint transferred from Alex Chen to Devin Thorne. Reason: Staff resignation - relocating abroad.",
+          "transferDetails": {
+            "oldStaffId": "usr_staff_1",
+            "oldStaffName": "Alex Chen",
+            "newStaffId": "usr_staff_2",
+            "newStaffName": "Devin Thorne",
+            "reason": "Staff resignation - relocating abroad",
+            "performedBy": "Dean Sarah Jenkins",
+            "timestamp": "2026-09-23T11:21:14.855Z"
+          }
+        },
+        {
+          "id": "sh-transfer-1790171139251-f6on2",
+          "fromStatus": "Assigned",
+          "toStatus": "Assigned",
+          "changedBy": "Dean Sarah Jenkins (Admin)",
+          "timestamp": "2026-09-23T13:45:39.251Z",
+          "note": "Assigned to Devin Thorne → Reassigned to Marcus Vance. Reassigned by Dean Sarah Jenkins on 23/9/2026, 7:15:39 pm. Reason: Staff resignation / role transition.",
+          "transferDetails": {
+            "oldStaffId": "usr_staff_2",
+            "oldStaffName": "Devin Thorne",
+            "newStaffId": "usr_staff_1790170126021",
+            "newStaffName": "Marcus Vance",
+            "reason": "Staff resignation / role transition",
+            "performedBy": "Dean Sarah Jenkins",
+            "timestamp": "2026-09-23T13:45:39.251Z"
+          }
+        }
+      ],
+      "comments": [],
+      "resolutionNotes": null,
+      "resolutionPhoto": null,
+      "resolvedAt": null,
+      "rating": null,
+      "feedback": null
+    },
+    {
+      "id": "CMP-2026-1038",
+      "title": "Internet problem in Lab 202",
+      "description": "Core switch stack throwing packet loss alarms on VLAN 40. High latency reported by research scholars.",
+      "category": "wifi_it",
+      "priority": "high",
+      "status": "Under Review",
+      "location": "Tech Hub Building → 2nd Floor → Lab 202",
+      "student": {
+        "id": "usr_student_2",
+        "name": "Rahul Verma",
+        "studentId": "STU-2024-9102",
+        "email": "rahul.verma@college.edu",
+        "department": "Mechanical Engineering",
+        "avatar": "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80"
+      },
+      "createdAt": "2026-09-22T16:51:04.135Z",
+      "updatedAt": "2026-09-23T13:45:39.251Z",
+      "assignedDepartment": "it_services",
+      "assignedStaff": "usr_staff_1790170126021",
+      "attachments": [],
+      "statusHistory": [
+        {
+          "id": "sh-1038-1",
+          "fromStatus": null,
+          "toStatus": "Submitted",
+          "changedBy": "Rahul Verma (student)",
+          "timestamp": "2026-09-22T16:51:04.135Z",
+          "note": "Complaint registered by student"
+        },
+        {
+          "id": "sh-1038-2",
+          "fromStatus": "Submitted",
+          "toStatus": "Under Review",
+          "changedBy": "Dean Sarah Jenkins (admin)",
+          "timestamp": "2026-09-23T00:51:04.135Z",
+          "note": "Reviewing switch redundancy"
+        },
+        {
+          "id": "sh-transfer-1790161677690-ibyj8",
+          "fromStatus": "Under Review",
+          "toStatus": "Under Review",
+          "changedBy": "Dean Sarah Jenkins (Admin)",
+          "timestamp": "2026-09-23T11:07:57.690Z",
+          "note": "Staff Transfer: Complaint transferred from Alex Chen to Devin Thorne. Reason: Staff resignation - relocating abroad.",
+          "transferDetails": {
+            "oldStaffId": "usr_staff_1",
+            "oldStaffName": "Alex Chen",
+            "newStaffId": "usr_staff_2",
+            "newStaffName": "Devin Thorne",
+            "reason": "Staff resignation - relocating abroad",
+            "performedBy": "Dean Sarah Jenkins",
+            "timestamp": "2026-09-23T11:07:57.690Z"
+          }
+        },
+        {
+          "id": "sh-transfer-1790161721320-6s8rd",
+          "fromStatus": "Under Review",
+          "toStatus": "Under Review",
+          "changedBy": "Dean Sarah Jenkins (Admin)",
+          "timestamp": "2026-09-23T11:08:41.320Z",
+          "note": "Staff Transfer: Complaint transferred from Devin Thorne to Alex Chen. Reason: Initial test setup.",
+          "transferDetails": {
+            "oldStaffId": "usr_staff_2",
+            "oldStaffName": "Devin Thorne",
+            "newStaffId": "usr_staff_1",
+            "newStaffName": "Alex Chen",
+            "reason": "Initial test setup",
+            "performedBy": "Dean Sarah Jenkins",
+            "timestamp": "2026-09-23T11:08:41.320Z"
+          }
+        },
+        {
+          "id": "sh-transfer-1790162474855-gax3x",
+          "fromStatus": "Under Review",
+          "toStatus": "Under Review",
+          "changedBy": "Dean Sarah Jenkins (Admin)",
+          "timestamp": "2026-09-23T11:21:14.855Z",
+          "note": "Staff Transfer: Complaint transferred from Alex Chen to Devin Thorne. Reason: Staff resignation - relocating abroad.",
+          "transferDetails": {
+            "oldStaffId": "usr_staff_1",
+            "oldStaffName": "Alex Chen",
+            "newStaffId": "usr_staff_2",
+            "newStaffName": "Devin Thorne",
+            "reason": "Staff resignation - relocating abroad",
+            "performedBy": "Dean Sarah Jenkins",
+            "timestamp": "2026-09-23T11:21:14.855Z"
+          }
+        },
+        {
+          "id": "sh-transfer-1790171139251-eysun",
+          "fromStatus": "Under Review",
+          "toStatus": "Under Review",
+          "changedBy": "Dean Sarah Jenkins (Admin)",
+          "timestamp": "2026-09-23T13:45:39.251Z",
+          "note": "Assigned to Devin Thorne → Reassigned to Marcus Vance. Reassigned by Dean Sarah Jenkins on 23/9/2026, 7:15:39 pm. Reason: Staff resignation / role transition.",
+          "transferDetails": {
+            "oldStaffId": "usr_staff_2",
+            "oldStaffName": "Devin Thorne",
+            "newStaffId": "usr_staff_1790170126021",
+            "newStaffName": "Marcus Vance",
+            "reason": "Staff resignation / role transition",
+            "performedBy": "Dean Sarah Jenkins",
+            "timestamp": "2026-09-23T13:45:39.251Z"
+          }
+        }
+      ],
+      "comments": [],
+      "resolutionNotes": null,
+      "resolutionPhoto": null,
+      "resolvedAt": null,
+      "rating": null,
+      "feedback": null
+    },
+    {
+      "id": "CMP-2026-1031",
+      "title": "Network issue in Main Building",
+      "description": "Ethernet drop in Seminar Hall B is intermittent. Presentation computers dropping connection during conference.",
+      "category": "wifi_it",
+      "priority": "medium",
+      "status": "Assigned",
+      "location": "Main Building → Ground Floor → Seminar Hall B",
+      "student": {
+        "id": "usr_student_3",
+        "name": "Ananya Patel",
+        "studentId": "STU-2024-4421",
+        "email": "ananya.patel@college.edu",
+        "department": "Electrical & Power Systems",
+        "avatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80"
+      },
+      "createdAt": "2026-09-21T22:51:04.135Z",
+      "updatedAt": "2026-09-23T13:45:39.251Z",
+      "assignedDepartment": "it_services",
+      "assignedStaff": "usr_staff_1790170126021",
+      "attachments": [],
+      "statusHistory": [
+        {
+          "id": "sh-1031-1",
+          "fromStatus": null,
+          "toStatus": "Submitted",
+          "changedBy": "Ananya Patel (student)",
+          "timestamp": "2026-09-21T22:51:04.135Z",
+          "note": "Complaint registered by student"
+        },
+        {
+          "id": "sh-1031-2",
+          "fromStatus": "Submitted",
+          "toStatus": "Assigned",
+          "changedBy": "Dean Sarah Jenkins (admin)",
+          "timestamp": "2026-09-22T10:51:04.135Z",
+          "note": "Assigned to IT Infrastructure Lead Alex Chen"
+        },
+        {
+          "id": "sh-transfer-1790161677690-tan0z",
+          "fromStatus": "Assigned",
+          "toStatus": "Assigned",
+          "changedBy": "Dean Sarah Jenkins (Admin)",
+          "timestamp": "2026-09-23T11:07:57.690Z",
+          "note": "Staff Transfer: Complaint transferred from Alex Chen to Devin Thorne. Reason: Staff resignation - relocating abroad.",
+          "transferDetails": {
+            "oldStaffId": "usr_staff_1",
+            "oldStaffName": "Alex Chen",
+            "newStaffId": "usr_staff_2",
+            "newStaffName": "Devin Thorne",
+            "reason": "Staff resignation - relocating abroad",
+            "performedBy": "Dean Sarah Jenkins",
+            "timestamp": "2026-09-23T11:07:57.690Z"
+          }
+        },
+        {
+          "id": "sh-transfer-1790161721320-y9qdx",
+          "fromStatus": "Assigned",
+          "toStatus": "Assigned",
+          "changedBy": "Dean Sarah Jenkins (Admin)",
+          "timestamp": "2026-09-23T11:08:41.320Z",
+          "note": "Staff Transfer: Complaint transferred from Devin Thorne to Alex Chen. Reason: Initial test setup.",
+          "transferDetails": {
+            "oldStaffId": "usr_staff_2",
+            "oldStaffName": "Devin Thorne",
+            "newStaffId": "usr_staff_1",
+            "newStaffName": "Alex Chen",
+            "reason": "Initial test setup",
+            "performedBy": "Dean Sarah Jenkins",
+            "timestamp": "2026-09-23T11:08:41.320Z"
+          }
+        },
+        {
+          "id": "sh-transfer-1790162474855-1iqmw",
+          "fromStatus": "Assigned",
+          "toStatus": "Assigned",
+          "changedBy": "Dean Sarah Jenkins (Admin)",
+          "timestamp": "2026-09-23T11:21:14.855Z",
+          "note": "Staff Transfer: Complaint transferred from Alex Chen to Devin Thorne. Reason: Staff resignation - relocating abroad.",
+          "transferDetails": {
+            "oldStaffId": "usr_staff_1",
+            "oldStaffName": "Alex Chen",
+            "newStaffId": "usr_staff_2",
+            "newStaffName": "Devin Thorne",
+            "reason": "Staff resignation - relocating abroad",
+            "performedBy": "Dean Sarah Jenkins",
+            "timestamp": "2026-09-23T11:21:14.855Z"
+          }
+        },
+        {
+          "id": "sh-transfer-1790171139251-zzmnn",
+          "fromStatus": "Assigned",
+          "toStatus": "Assigned",
+          "changedBy": "Dean Sarah Jenkins (Admin)",
+          "timestamp": "2026-09-23T13:45:39.251Z",
+          "note": "Assigned to Devin Thorne → Reassigned to Marcus Vance. Reassigned by Dean Sarah Jenkins on 23/9/2026, 7:15:39 pm. Reason: Staff resignation / role transition.",
+          "transferDetails": {
+            "oldStaffId": "usr_staff_2",
+            "oldStaffName": "Devin Thorne",
+            "newStaffId": "usr_staff_1790170126021",
+            "newStaffName": "Marcus Vance",
+            "reason": "Staff resignation / role transition",
+            "performedBy": "Dean Sarah Jenkins",
+            "timestamp": "2026-09-23T13:45:39.251Z"
+          }
+        }
+      ],
+      "comments": [],
+      "resolutionNotes": null,
+      "resolutionPhoto": null,
+      "resolvedAt": null,
+      "rating": null,
+      "feedback": null
+    },
+    {
+      "id": "CMP-2026-1024",
+      "title": "Wi-Fi problem in Lab 204",
+      "description": "Terminals 12 to 24 cannot authenticate with the campus RADIUS access point. Error: DHCP lease timeout.",
+      "category": "wifi_it",
+      "priority": "high",
+      "status": "In Progress",
+      "location": "Tech Hub Building → 2nd Floor → Lab 204",
+      "student": {
+        "id": "usr_student_1",
+        "name": "Priya Sharma",
+        "studentId": "STU-2024-8841",
+        "email": "priya.sharma@college.edu",
+        "department": "Computer Science & Engineering",
+        "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"
+      },
+      "createdAt": "2026-09-21T10:51:04.134Z",
+      "updatedAt": "2026-09-23T13:45:39.251Z",
+      "assignedDepartment": "it_services",
+      "assignedStaff": "usr_staff_1790170126021",
+      "attachments": [],
+      "statusHistory": [
+        {
+          "id": "sh-1024-1",
+          "fromStatus": null,
+          "toStatus": "Submitted",
+          "changedBy": "Priya Sharma (student)",
+          "timestamp": "2026-09-21T10:51:04.135Z",
+          "note": "Complaint registered by student"
+        },
+        {
+          "id": "sh-1024-2",
+          "fromStatus": "Submitted",
+          "toStatus": "In Progress",
+          "changedBy": "Alex Chen (staff)",
+          "timestamp": "2026-09-22T22:51:04.135Z",
+          "note": "Technician on-site testing switch port & replacing PoE injector"
+        },
+        {
+          "id": "sh-transfer-1790161677690-zvnss",
+          "fromStatus": "In Progress",
+          "toStatus": "In Progress",
+          "changedBy": "Dean Sarah Jenkins (Admin)",
+          "timestamp": "2026-09-23T11:07:57.690Z",
+          "note": "Staff Transfer: Complaint transferred from Alex Chen to Devin Thorne. Reason: Staff resignation - relocating abroad.",
+          "transferDetails": {
+            "oldStaffId": "usr_staff_1",
+            "oldStaffName": "Alex Chen",
+            "newStaffId": "usr_staff_2",
+            "newStaffName": "Devin Thorne",
+            "reason": "Staff resignation - relocating abroad",
+            "performedBy": "Dean Sarah Jenkins",
+            "timestamp": "2026-09-23T11:07:57.690Z"
+          }
+        },
+        {
+          "id": "sh-transfer-1790161721320-e7slm",
+          "fromStatus": "In Progress",
+          "toStatus": "In Progress",
+          "changedBy": "Dean Sarah Jenkins (Admin)",
+          "timestamp": "2026-09-23T11:08:41.320Z",
+          "note": "Staff Transfer: Complaint transferred from Devin Thorne to Alex Chen. Reason: Initial test setup.",
+          "transferDetails": {
+            "oldStaffId": "usr_staff_2",
+            "oldStaffName": "Devin Thorne",
+            "newStaffId": "usr_staff_1",
+            "newStaffName": "Alex Chen",
+            "reason": "Initial test setup",
+            "performedBy": "Dean Sarah Jenkins",
+            "timestamp": "2026-09-23T11:08:41.320Z"
+          }
+        },
+        {
+          "id": "sh-transfer-1790162474855-6kyhf",
+          "fromStatus": "In Progress",
+          "toStatus": "In Progress",
+          "changedBy": "Dean Sarah Jenkins (Admin)",
+          "timestamp": "2026-09-23T11:21:14.855Z",
+          "note": "Staff Transfer: Complaint transferred from Alex Chen to Devin Thorne. Reason: Staff resignation - relocating abroad.",
+          "transferDetails": {
+            "oldStaffId": "usr_staff_1",
+            "oldStaffName": "Alex Chen",
+            "newStaffId": "usr_staff_2",
+            "newStaffName": "Devin Thorne",
+            "reason": "Staff resignation - relocating abroad",
+            "performedBy": "Dean Sarah Jenkins",
+            "timestamp": "2026-09-23T11:21:14.855Z"
+          }
+        },
+        {
+          "id": "sh-transfer-1790171139251-ml9xm",
+          "fromStatus": "In Progress",
+          "toStatus": "In Progress",
+          "changedBy": "Dean Sarah Jenkins (Admin)",
+          "timestamp": "2026-09-23T13:45:39.251Z",
+          "note": "Assigned to Devin Thorne → Reassigned to Marcus Vance. Reassigned by Dean Sarah Jenkins on 23/9/2026, 7:15:39 pm. Reason: Staff resignation / role transition.",
+          "transferDetails": {
+            "oldStaffId": "usr_staff_2",
+            "oldStaffName": "Devin Thorne",
+            "newStaffId": "usr_staff_1790170126021",
+            "newStaffName": "Marcus Vance",
+            "reason": "Staff resignation / role transition",
+            "performedBy": "Dean Sarah Jenkins",
+            "timestamp": "2026-09-23T13:45:39.251Z"
+          }
+        }
+      ],
+      "comments": [],
+      "resolutionNotes": null,
+      "resolutionPhoto": null,
+      "resolvedAt": null,
+      "rating": null,
+      "feedback": null
+    },
+    {
+      "id": "CMP-2026-8068",
+      "title": "flask are broken in laboratary",
+      "description": "in chemistry lab experiment flask are broken pls get new flask for us",
+      "category": "laboratory",
+      "priority": "urgent",
+      "status": "In Progress",
+      "location": "jcer  campus → Ground Floor → g16 lab",
+      "manualLocation": {
+        "building": "jcer  campus",
+        "floor": "Ground Floor",
+        "roomOrSpot": "g16 lab",
+        "additionalDetails": "opposite to seminar hall"
+      },
+      "gpsLocation": {
+        "address": null
+      },
+      "floorLevel": "Ground Floor",
+      "student": {
+        "id": "usr_student_3",
+        "name": "Ananya Patel",
+        "studentId": "STU-2024-4421",
+        "email": "ananya.patel@college.edu",
+        "department": "Electrical & Power Systems",
+        "avatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80"
+      },
+      "createdAt": "2026-09-23T10:29:50.599Z",
+      "updatedAt": "2026-09-23T10:32:31.533Z",
+      "assignedDepartment": "civil",
+      "assignedStaff": null,
+      "attachments": [],
+      "statusHistory": [
+        {
+          "id": "sh-1790159390599",
+          "fromStatus": null,
+          "toStatus": "Submitted",
+          "changedBy": "Ananya Patel (student)",
+          "timestamp": "2026-09-23T10:29:50.599Z",
+          "note": "Complaint registered by student"
+        },
+        {
+          "id": "sh-1790159551533",
+          "fromStatus": "Submitted",
+          "toStatus": "In Progress",
+          "changedBy": "Dean Sarah Jenkins (admin)",
+          "timestamp": "2026-09-23T10:32:31.533Z",
+          "note": "Applied automated Smart AI recommendations (Department & Technician)"
+        }
+      ],
+      "comments": [],
+      "resolutionNotes": null,
+      "resolutionPhoto": null,
+      "resolvedAt": null,
+      "rating": null,
+      "feedback": null,
+      "intelligence": {
+        "analyzed": true,
+        "suggestedCategory": "classroom",
+        "suggestedPriority": "low",
+        "suggestedDepartmentId": "civil",
+        "suggestedDepartmentName": "Civil Works & Estate Maintenance",
+        "suggestedStaffId": null,
+        "suggestedStaffName": null,
+        "confidence": 0.65,
+        "reasons": [
+          "Detected signals matching CLASSROOM keywords in problem description."
+        ],
+        "analyzedAt": "2026-09-23T10:29:50.599Z"
+      }
+    },
+    {
+      "id": "CMP-2026-8462",
+      "title": "complaint on wifi",
+      "description": "in the classroom 403 wifi is not working students are unable to connect with internet",
+      "category": "it_wifi",
+      "priority": "urgent",
+      "status": "Resolved",
+      "location": "mainbuilding jcr campus → 1st Floor → 403 (Rani Chennamma Nagar, Belagavi, Karnataka, India)",
+      "manualLocation": {
+        "building": "mainbuilding jcr campus",
+        "floor": "1st Floor",
+        "roomOrSpot": "403",
+        "additionalDetails": "udyambag  jcer"
+      },
+      "gpsLocation": {
+        "address": "Rani Chennamma Nagar, Belagavi, Karnataka, India"
+      },
+      "floorLevel": "1st Floor",
+      "student": {
+        "id": "usr_student_2",
+        "name": "Rahul Verma",
+        "studentId": "STU-2024-9102",
+        "email": "rahul.verma@college.edu",
+        "department": "Mechanical Engineering",
+        "avatar": "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80"
+      },
+      "createdAt": "2026-09-23T10:18:42.168Z",
+      "updatedAt": "2026-09-23T10:22:16.654Z",
+      "assignedDepartment": "it_services",
+      "assignedStaff": null,
+      "attachments": [],
+      "statusHistory": [
+        {
+          "id": "sh-1790158722168",
+          "fromStatus": null,
+          "toStatus": "Submitted",
+          "changedBy": "Rahul Verma (student)",
+          "timestamp": "2026-09-23T10:18:42.168Z",
+          "note": "Complaint registered by student"
+        },
+        {
+          "id": "sh-1790158936654",
+          "fromStatus": "Submitted",
+          "toStatus": "Resolved",
+          "changedBy": "Dean Sarah Jenkins (admin)",
+          "timestamp": "2026-09-23T10:22:16.654Z",
+          "note": "Applied automated Smart AI recommendations (Department & Technician)"
+        }
+      ],
+      "comments": [],
+      "resolutionNotes": "students ur probles is solved",
+      "resolutionPhoto": null,
+      "resolvedAt": "2026-09-23T10:22:16.654Z",
+      "rating": null,
+      "feedback": null,
+      "intelligence": {
+        "analyzed": true,
+        "suggestedCategory": "wifi_it",
+        "suggestedPriority": "urgent",
+        "suggestedDepartmentId": "it_services",
+        "suggestedDepartmentName": "IT Services & Network Infrastructure",
+        "suggestedStaffId": null,
+        "suggestedStaffName": null,
+        "confidence": 0.8,
+        "reasons": [
+          "Detected signals matching WIFI IT keywords in problem description.",
+          "Equipment or system is completely inoperable",
+          "Students blocked from accessing critical service"
+        ],
+        "analyzedAt": "2026-09-23T10:18:42.168Z"
+      }
+    },
+    {
+      "id": "CMP-2026-9230",
+      "title": "Broken Hallway Ceiling Light",
+      "description": "The hallway light near Room 402 is constantly flickering and buzzing.",
+      "category": "electrical",
+      "priority": "medium",
+      "status": "Closed",
+      "location": "Academic Block → 4th Floor → Room 402 (Udyambag, Belagavi, Karnataka, India)",
+      "manualLocation": {
+        "building": "Academic Block",
+        "floor": "4th Floor",
+        "roomOrSpot": "Room 402",
+        "additionalDetails": "Near staircase"
+      },
+      "gpsLocation": {
+        "address": "Udyambag, Belagavi, Karnataka, India"
+      },
+      "floorLevel": "4th Floor",
+      "student": {
+        "id": "usr_student_4",
+        "name": "Rohan Gupta",
+        "studentId": "STU-2024-7719",
+        "email": "rohan.gupta@college.edu",
+        "department": "Civil Engineering",
+        "avatar": "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&auto=format&fit=crop&q=80"
+      },
+      "createdAt": "2026-09-21T15:27:36.169Z",
+      "updatedAt": "2026-09-22T03:23:00.990Z",
+      "assignedDepartment": "library",
+      "assignedStaff": null,
+      "attachments": [],
+      "statusHistory": [
+        {
+          "id": "sh-1790004456169",
+          "fromStatus": null,
+          "toStatus": "Submitted",
+          "changedBy": "Dean Sarah Jenkins (admin)",
+          "timestamp": "2026-09-21T15:27:36.169Z",
+          "note": "Complaint registered by student"
+        },
+        {
+          "id": "sh-1790046749205",
+          "fromStatus": "Submitted",
+          "toStatus": "Resolved",
+          "changedBy": "Dean Sarah Jenkins (admin)",
+          "timestamp": "2026-09-22T03:12:29.205Z",
+          "note": "Triage update processed by Dean Sarah Jenkins"
+        },
+        {
+          "id": "sh-1790047380990",
+          "fromStatus": "Resolved",
+          "toStatus": "Closed",
+          "changedBy": "Dean Sarah Jenkins (admin)",
+          "timestamp": "2026-09-22T03:23:00.990Z",
+          "note": "Triage update processed by Dean Sarah Jenkins"
+        }
+      ],
+      "comments": [],
+      "resolutionNotes": "fix that problus as soon as possible",
+      "resolutionPhoto": null,
+      "resolvedAt": "2026-09-22T03:12:29.205Z",
+      "rating": null,
+      "feedback": null
+    },
+    {
+      "id": "CMP-2026-1081",
+      "title": "High-speed Wi-Fi down across Computer Science Lab 3",
+      "description": "During practical examinations, the main wireless access point AP-CS-302 completely dropped offline. Over 45 student terminals lost internet connectivity. SSID is broadcasting but fails authentication with DHCP timeout error.",
+      "category": "wifi_it",
+      "priority": "urgent",
+      "status": "Closed",
+      "location": "Turing Block, 3rd Floor, Lab 304",
+      "student": {
+        "id": "usr_student_1",
+        "name": "Priya Sharma",
+        "studentId": "STU-2024-8841",
+        "email": "priya.sharma@college.edu",
+        "department": "Computer Science & Engineering",
+        "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"
+      },
+      "createdAt": "2026-09-20T13:44:28.529Z",
+      "updatedAt": "2026-09-22T03:21:53.210Z",
+      "assignedDepartment": "it_services",
+      "assignedStaff": "usr_staff_1",
+      "attachments": [
+        {
+          "id": "att-1",
+          "name": "router_error_display.jpg",
+          "url": "https://images.unsplash.com/photo-1544197150-b99a580bb7a8?w=800&auto=format&fit=crop&q=80",
+          "size": "1.4 MB"
+        }
+      ],
+      "statusHistory": [
+        {
+          "id": "sh-1",
+          "fromStatus": null,
+          "toStatus": "Submitted",
+          "changedBy": "Priya Sharma (Student)",
+          "timestamp": "2026-09-20T13:44:28.529Z",
+          "note": "Complaint submitted by student"
+        },
+        {
+          "id": "sh-2",
+          "fromStatus": "Submitted",
+          "toStatus": "In Progress",
+          "changedBy": "Alex Chen (Staff)",
+          "timestamp": "2026-09-20T17:44:28.529Z",
+          "note": "Technician on-site testing switch port & replacing PoE injector"
+        },
+        {
+          "id": "sh-1790047313210",
+          "fromStatus": "In Progress",
+          "toStatus": "Closed",
+          "changedBy": "Dean Sarah Jenkins (admin)",
+          "timestamp": "2026-09-22T03:21:53.210Z",
+          "note": "Triage update processed by Dean Sarah Jenkins"
+        }
+      ],
+      "comments": [
+        {
+          "id": "c-1",
+          "authorName": "Alex Chen",
+          "authorRole": "staff",
+          "authorAvatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
+          "timestamp": "2026-09-20T19:44:28.529Z",
+          "message": "Faulty PoE switch located in rack CS-B. We are deploying a replacement switch and internet will be restored shortly.",
+          "isInternal": false
+        }
+      ],
+      "resolutionNotes": null,
+      "resolutionPhoto": null,
+      "resolvedAt": null,
+      "rating": null,
+      "feedback": null
+    }
+  ],
+  "departments": [
+    {
+      "id": "it_services",
+      "name": "IT Services & Network Infrastructure",
+      "code": "ITS",
+      "head": "Alex Chen",
+      "email": "it-support@college.edu",
+      "phone": "+1 (555) 019-2831",
+      "slaHours": 24,
+      "staffCount": 6,
+      "location": "Tech Hub Building, Room 201"
+    },
+    {
+      "id": "electrical",
+      "name": "Electrical & Power Systems",
+      "code": "ELEC",
+      "head": "Rajesh Kumar",
+      "email": "electrical@college.edu",
+      "phone": "+1 (555) 019-2832",
+      "slaHours": 12,
+      "staffCount": 8,
+      "location": "Engineering Annex, Ground Floor"
+    },
+    {
+      "id": "civil",
+      "name": "Civil Works & Estate Maintenance",
+      "code": "CIVIL",
+      "head": "Robert Miller",
+      "email": "estate@college.edu",
+      "phone": "+1 (555) 019-2833",
+      "slaHours": 48,
+      "staffCount": 12,
+      "location": "Facilities Workshop, Block E"
+    },
+    {
+      "id": "hostel_admin",
+      "name": "Hostel & Residential Life",
+      "code": "HOSTEL",
+      "head": "Sunita Rao",
+      "email": "hostel-warden@college.edu",
+      "phone": "+1 (555) 019-2834",
+      "slaHours": 18,
+      "staffCount": 10,
+      "location": "Hostel Administrative Office, Block A"
+    },
+    {
+      "id": "sanitation",
+      "name": "Sanitation & Housekeeping Services",
+      "code": "SAN",
+      "head": "Maria Gonzalez",
+      "email": "housekeeping@college.edu",
+      "phone": "+1 (555) 019-2835",
+      "slaHours": 8,
+      "staffCount": 20,
+      "location": "Central Stores & Services Unit"
+    },
+    {
+      "id": "transport",
+      "name": "Campus Transportation & Logistics",
+      "code": "TRANS",
+      "head": "David Kim",
+      "email": "transport@college.edu",
+      "phone": "+1 (555) 019-2836",
+      "slaHours": 24,
+      "staffCount": 5,
+      "location": "Campus Transport Yard, Gate 3"
+    },
+    {
+      "id": "canteen",
+      "name": "Food Safety & Canteen Committee",
+      "code": "FOOD",
+      "head": "Anita Desai",
+      "email": "canteen-head@college.edu",
+      "phone": "+1 (555) 019-2837",
+      "slaHours": 12,
+      "staffCount": 4,
+      "location": "Student Activity Center, Level 1"
+    },
+    {
+      "id": "library",
+      "name": "Central Library Management",
+      "code": "LIB",
+      "head": "Dr. James Wright",
+      "email": "library-helpdesk@college.edu",
+      "phone": "+1 (555) 019-2838",
+      "slaHours": 24,
+      "staffCount": 7,
+      "location": "Central Library, Main Floor"
+    },
+    {
+      "id": "academics",
+      "name": "Academic Affairs & Registry",
+      "code": "ACAD",
+      "head": "Prof. Evelyn Reed",
+      "email": "academic-dean@college.edu",
+      "phone": "+1 (555) 019-2839",
+      "slaHours": 48,
+      "staffCount": 9,
+      "location": "Administrative Block, Suite 101"
+    }
+  ]
+}
