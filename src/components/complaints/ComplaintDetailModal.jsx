@@ -6,7 +6,7 @@ import { CategoryBadge, PriorityBadge, StatusBadge } from '../common/Badge';
 import { DEPARTMENTS, STAFF_MEMBERS } from '../../data/departments';
 import { 
   MapPin, Calendar, User, Building, Paperclip, Send, 
-  CheckCircle2, Star, ShieldAlert, Edit3, MessageSquare, History, ExternalLink, Image as ImageIcon
+  CheckCircle2, Star, ShieldAlert, Edit3, MessageSquare, History, ExternalLink, Image as ImageIcon, Sparkles
 } from 'lucide-react';
 
 export const ComplaintDetailModal = () => {
@@ -112,7 +112,7 @@ export const ComplaintDetailModal = () => {
           paddingBottom: '8px'
         }}>
           {[
-            { id: 'overview', label: 'Details & Resolution', icon: MessageSquare },
+            { id: 'overview', label: 'Details & Location', icon: MessageSquare },
             { id: 'timeline', label: `Audit Log (${complaint.statusHistory.length})`, icon: History },
             { id: 'discussion', label: `Discussion (${(complaint.comments || []).length})`, icon: MessageSquare }
           ].map(tab => {
@@ -149,6 +149,9 @@ export const ComplaintDetailModal = () => {
         {/* Tab 1: Overview & Resolution */}
         {activeDetailTab === 'overview' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {/* AI Diagnosis Quick Action Card */}
+            <AiSolutionCard complaint={complaint} compact={true} />
+
             {/* Title & Description */}
             <div>
               <h3 style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '8px' }}>

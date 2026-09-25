@@ -9,7 +9,6 @@ import {
   Edit3, Building, UserCheck, CheckCircle2, 
   ArrowLeft, Sparkles, Shield, MapPin, AlertCircle, Save 
 } from 'lucide-react';
-import { SmartTriageCard } from '../intelligence/SmartTriageCard';
 
 export const ComplaintTriagePage = () => {
   const { id } = useParams();
@@ -153,14 +152,6 @@ export const ComplaintTriagePage = () => {
         <ArrowLeft size={18} />
         <span>Back to Ticket Details</span>
       </button>
-
-      {/* CampusCare Smart Triage AI Card */}
-      <SmartTriageCard
-        complaint={complaint}
-        onAcceptSuggestions={handleAcceptSuggestions}
-        departments={departments}
-        staffMembers={activeStaffList}
-      />
 
       {/* Main Glass Form */}
       <div className="glass-panel" style={{ padding: '32px', borderRadius: '24px' }}>

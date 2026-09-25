@@ -141,7 +141,7 @@ export const ComplaintDetailPage = () => {
           <StatusTimeline currentStatus={complaint.status} />
         </div>
 
-        {/* Tab Switcher: Overview | History | Discussion */}
+        {/* Tab Switcher: Overview | AI Solution | History | Discussion */}
         <div style={{
           display: 'flex',
           flexWrap: 'wrap',
@@ -200,7 +200,6 @@ export const ComplaintDetailPage = () => {
         {/* TAB 1: OVERVIEW */}
         {activeDetailTab === 'overview' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
-            
             {/* Campus Location Card (Manual + GPS) */}
             <div style={{
               padding: '20px',

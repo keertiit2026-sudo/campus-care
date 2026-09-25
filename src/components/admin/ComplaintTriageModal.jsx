@@ -3,13 +3,15 @@ import { useApp } from '../../context/AppContext';
 import { Modal } from '../common/Modal';
 import { STATUSES, PRIORITIES } from '../../data/categories';
 import { DEPARTMENTS, STAFF_MEMBERS } from '../../data/departments';
+import { CategoryBadge, PriorityBadge } from '../common/Badge';
 import { 
   CheckCircle2, Edit3, ShieldAlert, Building, 
-  UserCheck, AlertCircle, FileCheck, Camera, Sparkles
+  UserCheck, AlertCircle, FileCheck, Camera, Sparkles, Check, Info
 } from 'lucide-react';
+import { api } from '../../api/client';
 
 export const ComplaintTriageModal = () => {
-  const { modalState, closeModal, complaints, triageComplaint, currentPersona } = useApp();
+  const { modalState, closeModal, complaints, triageComplaint, currentPersona, addToast } = useApp();
 
   const [status, setStatus] = useState('In Progress');
   const [priority, setPriority] = useState('medium');
@@ -28,15 +30,13 @@ export const ComplaintTriageModal = () => {
 
   useEffect(() => {
     // Fetch live active staff
-    import('../../api/client').then(({ api }) => {
-      api.getStaff({ status: 'active' })
-        .then(res => {
-          if (Array.isArray(res) && res.length > 0) {
-            setActiveStaffList(res.filter(s => (s.status || 'active') === 'active'));
-          }
-        })
-        .catch(() => {});
-    });
+    api.getStaff({ status: 'active' })
+      .then(res => {
+        if (Array.isArray(res) && res.length > 0) {
+          setActiveStaffList(res.filter(s => (s.status || 'active') === 'active'));
+        }
+      })
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -56,7 +56,6 @@ export const ComplaintTriageModal = () => {
     return null;
   }
 
-  // Filter ONLY active staff by selected department
   const availableStaff = activeStaffList.filter(
     s => (s.departmentId === department || s.department === department) && (s.status || 'active') === 'active'
   );
@@ -85,7 +84,7 @@ export const ComplaintTriageModal = () => {
     <Modal
       isOpen={modalState.isOpen && modalState.type === 'triage'}
       onClose={closeModal}
-      maxWidth="700px"
+      maxWidth="750px"
       title={`Triage & Dispatch: #${complaint.id}`}
       subtitle={`Reviewing "${complaint.title.slice(0, 45)}..."`}
       icon={Edit3}

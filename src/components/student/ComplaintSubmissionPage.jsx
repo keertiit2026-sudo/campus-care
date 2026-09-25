@@ -2,12 +2,13 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { CATEGORIES, PRIORITIES } from '../../data/categories';
-import { CategoryIcon } from '../common/Badge';
+import { CategoryIcon, CategoryBadge, PriorityBadge } from '../common/Badge';
 import { reverseGeocodeAddress, detectCurrentLocation } from '../../utils/geoUtils';
+import { api } from '../../api/client';
 import { 
   PlusCircle, AlertCircle, 
   MapPin, Sparkles, Layers, Building, DoorOpen, AlignLeft, 
-  Camera, ImagePlus, RefreshCw, ArrowLeft, Send, CheckCircle2, Crosshair, X, Globe, Edit2, Check
+  Camera, ImagePlus, RefreshCw, ArrowLeft, Send, CheckCircle2, Crosshair, X, Globe, Edit2, Check, Zap, HelpCircle
 } from 'lucide-react';
 
 const FLOOR_OPTIONS = [
@@ -898,6 +899,102 @@ export const ComplaintSubmissionPage = () => {
               </span>
             )}
           </div>
+
+          {/* 🤖 Live Real-Time AI Smart Triage Assistant Widget */}
+          {liveAiTriage && (
+            <div
+              style={{
+                padding: '16px 20px',
+                borderRadius: '16px',
+                background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(236, 72, 153, 0.06) 100%)',
+                border: '1px solid rgba(99, 102, 241, 0.25)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px',
+                boxShadow: '0 4px 16px rgba(99, 102, 241, 0.08)',
+                animation: 'fadeIn 0.3s ease-out'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{
+                    width: '28px', height: '28px', borderRadius: '8px',
+                    background: 'linear-gradient(135deg, var(--primary-500), #ec4899)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff'
+                  }}>
+                    <Sparkles size={15} />
+                  </div>
+                  <div>
+                    <span style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--text-primary)' }}>
+                      AI Smart Triage Assistant
+                    </span>
+                    <span style={{
+                      marginLeft: '8px', fontSize: '0.68rem', fontWeight: 800, padding: '2px 6px', borderRadius: '8px',
+                      background: 'rgba(99, 102, 241, 0.2)', color: 'var(--primary-400)'
+                    }}>
+                      {Math.round((liveAiTriage.confidence || 0.85) * 100)}% Match
+                    </span>
+                  </div>
+                </div>
+
+                {/* 1-Click Apply Category / Priority if different */}
+                {(category !== liveAiTriage.suggestedCategory || priority !== liveAiTriage.suggestedPriority) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (liveAiTriage.suggestedCategory) setCategory(liveAiTriage.suggestedCategory);
+                      if (liveAiTriage.suggestedPriority) setPriority(liveAiTriage.suggestedPriority);
+                    }}
+                    className="btn btn-primary btn-sm"
+                    style={{ gap: '6px', fontSize: '0.78rem', padding: '6px 12px' }}
+                  >
+                    <Sparkles size={13} />
+                    <span>Auto-Sync Category & Urgency</span>
+                  </button>
+                )}
+              </div>
+
+              {/* AI Detection Summary Grid */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+                gap: '10px',
+                background: 'rgba(0, 0, 0, 0.15)',
+                padding: '10px 14px',
+                borderRadius: '12px',
+                fontSize: '0.8rem'
+              }}>
+                <div>
+                  <span style={{ color: 'var(--text-secondary)', display: 'block', fontSize: '0.7rem', marginBottom: '3px' }}>
+                    Detected Category:
+                  </span>
+                  <CategoryBadge categoryId={liveAiTriage.suggestedCategory} size="sm" />
+                </div>
+                <div>
+                  <span style={{ color: 'var(--text-secondary)', display: 'block', fontSize: '0.7rem', marginBottom: '3px' }}>
+                    Assessed Urgency & SLA:
+                  </span>
+                  <PriorityBadge priority={liveAiTriage.suggestedPriority} size="sm" />
+                </div>
+                <div>
+                  <span style={{ color: 'var(--text-secondary)', display: 'block', fontSize: '0.7rem', marginBottom: '3px' }}>
+                    Auto-Dispatched Department:
+                  </span>
+                  <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>
+                    {liveAiTriage.suggestedDepartmentName || 'IT Services & Network Infrastructure'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Reasoning */}
+              {liveAiTriage.reasons && liveAiTriage.reasons.length > 0 && (
+                <div style={{ fontSize: '0.76rem', color: 'var(--text-secondary)' }}>
+                  <strong style={{ color: 'var(--text-primary)' }}>AI Evidence: </strong>
+                  {liveAiTriage.reasons.join(' • ')}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Photo Evidence Section */}
           <div>

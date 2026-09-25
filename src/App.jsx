@@ -12,7 +12,6 @@ import { ComplaintDetailPage } from './components/complaints/ComplaintDetailPage
 import { ComplaintTriagePage } from './components/admin/ComplaintTriagePage';
 import { DepartmentsView } from './components/admin/DepartmentsView';
 import { AnalyticsView } from './components/admin/AnalyticsView';
-import { IntelligenceDashboardPage } from './components/intelligence/IntelligenceDashboardPage';
 import { StudentLoginPage } from './components/student/StudentLoginPage';
 import { AdminLoginPage } from './components/admin/AdminLoginPage';
 import { NotFoundPage } from './components/pages/NotFoundPage';
@@ -97,11 +96,6 @@ const MainLayout = () => {
             <Route path="/admin/triage/:id" element={
               <ProtectedRoute allowedRoles={['admin', 'staff']}>
                 <ComplaintTriagePage />
-              </ProtectedRoute>
-            } />
-            <Route path="/intelligence" element={
-              <ProtectedRoute allowedRoles={['admin', 'staff']}>
-                <IntelligenceDashboardPage />
               </ProtectedRoute>
             } />
             <Route path="/analytics" element={
