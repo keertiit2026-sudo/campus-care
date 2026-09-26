@@ -1,9 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Modal } from '../common/Modal';
 import { CATEGORIES, PRIORITIES } from '../../data/categories';
 import { CategoryIcon, CategoryBadge, PriorityBadge } from '../common/Badge';
 import { reverseGeocodeAddress, detectCurrentLocation } from '../../utils/geoUtils';
+import { analyzeDraftClient } from '../../utils/intelligenceEngine';
 import { api } from '../../api/client';
 import { 
   PlusCircle, Upload, Image, X, AlertCircle, 
@@ -61,6 +62,20 @@ export const ComplaintSubmissionModal = () => {
   // Hidden separate file inputs
   const cameraInputRef = useRef(null); // Dedicated input with capture="environment"
   const galleryInputRef = useRef(null); // Dedicated input with multiple and no capture
+
+  // Real-Time Client AI Smart Triage Suggestion
+  const liveAiTriage = useMemo(() => {
+    if ((!title || title.trim().length < 3) && (!description || description.trim().length < 5)) {
+      return null;
+    }
+    return analyzeDraftClient({
+      title,
+      description,
+      category,
+      priority,
+      location: buildingName ? `${buildingName} ${floorLevel} ${roomNumber}` : (gpsLocation?.address || '')
+    });
+  }, [title, description, category, priority, buildingName, floorLevel, roomNumber, gpsLocation]);
 
   // Stop camera stream when modal closes or unmounts
   const stopCameraStream = () => {
@@ -770,8 +785,6 @@ export const ComplaintSubmissionModal = () => {
               className="input-control"
               style={{ minHeight: '65px', fontSize: '0.85rem' }}
             />
-          </div>
-
           </div>
         </div>
 

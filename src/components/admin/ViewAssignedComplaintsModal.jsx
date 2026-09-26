@@ -196,7 +196,7 @@ export const ViewAssignedComplaintsModal = ({ isOpen, onClose, staff, complaints
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                       <MapPin size={13} />
-                      <span>{c.location || 'Campus Location'}</span>
+                      <span>{typeof c.location === 'object' ? (c.location.building || 'Campus') : (c.location || 'Campus Location')}</span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                       <User size={13} />

@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CategoryBadge, PriorityBadge, StatusBadge } from '../common/Badge';
 import { DEPARTMENTS } from '../../data/departments';
+import { formatLocationString } from '../../utils/intelligenceEngine';
 import { MapPin, Clock, MessageSquare, Paperclip, ChevronRight, UserCheck, Star } from 'lucide-react';
 
 export const ComplaintCard = ({ complaint }) => {
@@ -109,7 +110,7 @@ export const ComplaintCard = ({ complaint }) => {
       }}>
         <MapPin size={13} color="var(--primary-400)" />
         <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '280px' }}>
-          {complaint.location}
+          {formatLocationString(complaint.location)}
         </span>
       </div>
 

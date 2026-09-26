@@ -120,7 +120,7 @@ export const StaffDeactivateModal = ({
                         #{c.id} — {c.title}
                       </div>
                       <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                        {c.location}
+                        {typeof c.location === 'object' ? (c.location.building || 'Campus') : (c.location || 'Campus Location')}
                       </div>
                     </div>
                     <StatusBadge status={c.status} size="sm" />

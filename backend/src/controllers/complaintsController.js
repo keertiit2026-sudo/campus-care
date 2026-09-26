@@ -86,6 +86,19 @@ export const createComplaint = (req, res) => {
       }
     }
 
+    let intelligenceResult = null;
+    try {
+      intelligenceResult = analyzeComplaint({
+        title: title.trim(),
+        description: description.trim(),
+        category,
+        priority: priority || 'medium',
+        location: displayLocation
+      });
+    } catch (analysisErr) {
+      console.warn('Smart complaint intelligence analysis encountered an issue (non-blocking):', analysisErr.message);
+    }
+
     const newId = `CMP-2026-${Math.floor(1000 + Math.random() * 9000)}`;
     const newComplaint = {
       id: newId,
@@ -134,13 +147,7 @@ export const createComplaint = (req, res) => {
       resolvedAt: null,
       rating: null,
       feedback: null,
-      intelligence: analyzeComplaint({
-        title: title.trim(),
-        description: description.trim(),
-        category,
-        priority: priority || 'medium',
-        location: displayLocation
-      })
+      intelligence: intelligenceResult
     };
 
     db.createComplaint(newComplaint);

@@ -14,11 +14,15 @@ import { DepartmentsView } from './components/admin/DepartmentsView';
 import { AnalyticsView } from './components/admin/AnalyticsView';
 import { StudentLoginPage } from './components/student/StudentLoginPage';
 import { AdminLoginPage } from './components/admin/AdminLoginPage';
+import { IntelligenceDashboardPage } from './components/intelligence/IntelligenceDashboardPage';
 import { NotFoundPage } from './components/pages/NotFoundPage';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 
 // Shared modals & toasts
 import { ExportModal } from './components/shared/ExportModal';
+import { ComplaintSubmissionModal } from './components/student/ComplaintSubmissionModal';
+import { ComplaintDetailModal } from './components/complaints/ComplaintDetailModal';
+import { ComplaintTriageModal } from './components/admin/ComplaintTriageModal';
 import { ToastContainer } from './components/common/ToastContainer';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 
@@ -103,6 +107,16 @@ const MainLayout = () => {
                 <AnalyticsView />
               </ProtectedRoute>
             } />
+            <Route path="/admin/intelligence" element={
+              <ProtectedRoute allowedRoles={['admin', 'staff']}>
+                <IntelligenceDashboardPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/intelligence" element={
+              <ProtectedRoute allowedRoles={['admin', 'staff']}>
+                <IntelligenceDashboardPage />
+              </ProtectedRoute>
+            } />
 
             {/* 404 Fallback */}
             <Route path="*" element={<NotFoundPage />} />
@@ -111,7 +125,14 @@ const MainLayout = () => {
       </div>
 
       {/* Modals & Toasts */}
-      {!isAuthRoute && <ExportModal />}
+      {!isAuthRoute && (
+        <>
+          <ExportModal />
+          <ComplaintSubmissionModal />
+          <ComplaintDetailModal />
+          <ComplaintTriageModal />
+        </>
+      )}
       <ToastContainer />
     </div>
   );

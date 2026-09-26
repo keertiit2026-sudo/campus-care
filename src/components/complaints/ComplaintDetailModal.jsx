@@ -4,6 +4,7 @@ import { Modal } from '../common/Modal';
 import { StatusTimeline } from '../common/StatusTimeline';
 import { CategoryBadge, PriorityBadge, StatusBadge } from '../common/Badge';
 import { DEPARTMENTS, STAFF_MEMBERS } from '../../data/departments';
+import { formatLocationString } from '../../utils/intelligenceEngine';
 import { 
   MapPin, Calendar, User, Building, Paperclip, Send, 
   CheckCircle2, Star, ShieldAlert, Edit3, MessageSquare, History, ExternalLink, Image as ImageIcon, Sparkles
@@ -184,7 +185,7 @@ export const ComplaintDetailModal = () => {
                     Reported Campus Location
                   </div>
                   <div style={{ fontSize: '0.925rem', fontWeight: 700, color: 'var(--text-primary)', marginTop: '4px' }}>
-                    {complaint.location}
+                    {formatLocationString(complaint.location)}
                   </div>
                   {complaint.locationDetails?.additionalDetails && (
                     <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '4px', fontStyle: 'italic' }}>
@@ -543,7 +544,7 @@ export const ComplaintDetailModal = () => {
             <form onSubmit={handlePostComment} style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
               <input
                 type="text"
-                placeholder={`Post an update as ${currentPersona.name}...`}
+                placeholder={`Post an update as ${currentPersona?.name || 'User'}...`}
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
                 className="input-control"

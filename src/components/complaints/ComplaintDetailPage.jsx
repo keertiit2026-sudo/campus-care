@@ -59,9 +59,9 @@ export const ComplaintDetailPage = () => {
 
   // Structured location fields
   const locDetails = complaint.manualLocation || complaint.locationDetails || {};
-  const building = locDetails.building || complaint.location?.split('→')[0]?.trim() || complaint.location;
-  const floor = locDetails.floor || complaint.floorLevel || 'Ground Floor';
-  const room = locDetails.roomOrSpot || complaint.location?.split('→')[2]?.trim() || '';
+  const building = locDetails.building || (typeof complaint.location === 'string' ? (complaint.location.split('→')[0]?.trim() || complaint.location) : complaint.location?.building) || 'Campus Facility';
+  const floor = locDetails.floor || complaint.floorLevel || (typeof complaint.location === 'string' && complaint.location.includes('→') ? complaint.location.split('→')[1]?.trim() : 'Ground Floor');
+  const room = locDetails.roomOrSpot || (typeof complaint.location === 'string' && complaint.location.includes('→') ? complaint.location.split('→')[2]?.trim() : complaint.location?.roomOrSpot) || '';
   const details = locDetails.additionalDetails || '';
   const gpsAddress = complaint.gpsLocation?.address || (typeof complaint.gpsLocation === 'string' ? complaint.gpsLocation : null);
 

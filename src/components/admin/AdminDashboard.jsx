@@ -5,6 +5,7 @@ import { StatCard } from '../common/StatCard';
 import { CATEGORIES, STATUSES, PRIORITIES } from '../../data/categories';
 import { DEPARTMENTS } from '../../data/departments';
 import { CategoryBadge, PriorityBadge, StatusBadge } from '../common/Badge';
+import { formatLocationString } from '../../utils/intelligenceEngine';
 import { 
   Shield, AlertTriangle, CheckCircle2, Clock, 
   BarChart3, Users, Building, ArrowUpRight, Edit3, Eye, Download, Sparkles
@@ -67,7 +68,15 @@ export const AdminDashboard = () => {
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: '10px' }}>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <button
+            onClick={() => navigate('/admin/intelligence')}
+            className="btn btn-primary"
+            style={{ gap: '6px', background: 'var(--primary-gradient)', border: 'none' }}
+          >
+            <Sparkles size={16} />
+            <span>Intelligence AI</span>
+          </button>
           <button
             onClick={() => navigate('/complaints')}
             className="btn btn-secondary"
@@ -78,7 +87,7 @@ export const AdminDashboard = () => {
           </button>
           <button
             onClick={() => openModal('export')}
-            className="btn btn-primary"
+            className="btn btn-secondary"
             style={{ gap: '6px' }}
           >
             <Download size={16} />
@@ -290,7 +299,7 @@ export const AdminDashboard = () => {
                         {c.title}
                       </div>
                       <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>
-                        📍 {c.location}
+                        📍 {formatLocationString(c.location)}
                       </div>
                     </td>
                     <td style={{ padding: '12px 14px' }}>

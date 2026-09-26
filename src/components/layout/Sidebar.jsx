@@ -39,6 +39,7 @@ export const Sidebar = ({ isMobileOpen, onCloseMobile }) => {
     ] : []),
     { path: '/departments', label: 'Departments', icon: Building, badge: null },
     ...(user?.role === 'admin' || user?.role === 'staff' || currentPersona?.role === 'admin' ? [
+      { path: '/admin/intelligence', label: 'Intelligence AI', icon: Sparkles, badge: 'AI' },
       { path: '/analytics', label: 'Reports', icon: BarChart3, badge: null }
     ] : [])
   ];

@@ -5,6 +5,7 @@ import { ComplaintCard } from './ComplaintCard';
 import { CATEGORIES, PRIORITIES, STATUSES } from '../../data/categories';
 import { DEPARTMENTS } from '../../data/departments';
 import { CategoryBadge, PriorityBadge, StatusBadge, CategoryIcon } from '../common/Badge';
+import { formatLocationString } from '../../utils/intelligenceEngine';
 import { 
   Search, Filter, LayoutGrid, Table, ArrowUpDown, 
   PlusCircle, RefreshCw, AlertCircle, CheckCircle2, ChevronRight, Download
@@ -55,7 +56,7 @@ export const ComplaintList = ({ customTitle, onlyMyComplaints = false }) => {
         const matchTitle = (item.title || '').toLowerCase().includes(q);
         const matchDesc = (item.description || '').toLowerCase().includes(q);
         const matchId = (item.id || '').toLowerCase().includes(q);
-        const matchLoc = (item.location || '').toLowerCase().includes(q);
+        const matchLoc = formatLocationString(item.location).toLowerCase().includes(q);
         const matchCat = (item.category || '').toLowerCase().includes(q);
         const matchStudent = (item.student?.name || '').toLowerCase().includes(q);
         if (!matchTitle && !matchDesc && !matchId && !matchLoc && !matchCat && !matchStudent) {
@@ -425,7 +426,7 @@ export const ComplaintList = ({ customTitle, onlyMyComplaints = false }) => {
                       <StatusBadge status={c.status} size="sm" />
                     </td>
                     <td style={{ padding: '14px 18px', color: 'var(--text-secondary)' }}>
-                      {c.location}
+                      {formatLocationString(c.location)}
                     </td>
                     <td style={{ padding: '14px 18px', color: 'var(--text-secondary)' }}>
                       {c.student?.name || 'Student'}

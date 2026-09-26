@@ -1,6 +1,30 @@
 const rawBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 const API_BASE_URL = rawBaseUrl.endsWith('/') ? rawBaseUrl.slice(0, -1) : rawBaseUrl;
 
+// Check if running in an HTTPS production environment where http://localhost is unreachable
+const isHttpsProd = typeof window !== 'undefined' && window.location.protocol === 'https:' && API_BASE_URL.startsWith('http://localhost');
+
+async function safeFetch(url, options = {}, timeoutMs = 2500) {
+  if (isHttpsProd && url.startsWith('http://localhost')) {
+    throw new Error('Localhost API server is not reachable over HTTPS in cloud deployment.');
+  }
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const res = await fetch(url, {
+      ...options,
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+    return res;
+  } catch (err) {
+    clearTimeout(timeoutId);
+    throw err;
+  }
+}
+
 const getAuthHeaders = () => {
   const token = localStorage.getItem('campuscare_jwt_token');
   return {
@@ -12,7 +36,7 @@ const getAuthHeaders = () => {
 export const api = {
   // --- Auth API ---
   async register(data) {
-    const res = await fetch(`${API_BASE_URL}/auth/register`, {
+    const res = await safeFetch(`${API_BASE_URL}/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
@@ -23,7 +47,7 @@ export const api = {
   },
 
   async login(identifier, password) {
-    const res = await fetch(`${API_BASE_URL}/auth/login`, {
+    const res = await safeFetch(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ identifier, email: identifier, password })
@@ -34,7 +58,7 @@ export const api = {
   },
 
   async getMe() {
-    const res = await fetch(`${API_BASE_URL}/auth/me`, {
+    const res = await safeFetch(`${API_BASE_URL}/auth/me`, {
       headers: getAuthHeaders()
     });
     const json = await res.json();
@@ -45,7 +69,7 @@ export const api = {
   // --- Complaints API ---
   async getComplaints(params = {}) {
     const query = new URLSearchParams(params).toString();
-    const res = await fetch(`${API_BASE_URL}/complaints?${query}`, {
+    const res = await safeFetch(`${API_BASE_URL}/complaints?${query}`, {
       headers: getAuthHeaders()
     });
     const json = await res.json();
@@ -54,7 +78,7 @@ export const api = {
   },
 
   async createComplaint(data) {
-    const res = await fetch(`${API_BASE_URL}/complaints`, {
+    const res = await safeFetch(`${API_BASE_URL}/complaints`, {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify(data)
@@ -65,7 +89,7 @@ export const api = {
   },
 
   async getComplaintById(id) {
-    const res = await fetch(`${API_BASE_URL}/complaints/${id}`, {
+    const res = await safeFetch(`${API_BASE_URL}/complaints/${id}`, {
       headers: getAuthHeaders()
     });
     const json = await res.json();
@@ -74,7 +98,7 @@ export const api = {
   },
 
   async triageComplaint(id, data) {
-    const res = await fetch(`${API_BASE_URL}/complaints/${id}/triage`, {
+    const res = await safeFetch(`${API_BASE_URL}/complaints/${id}/triage`, {
       method: 'PATCH',
       headers: getAuthHeaders(),
       body: JSON.stringify(data)
@@ -85,7 +109,7 @@ export const api = {
   },
 
   async addComment(id, message, isInternal = false) {
-    const res = await fetch(`${API_BASE_URL}/complaints/${id}/comments`, {
+    const res = await safeFetch(`${API_BASE_URL}/complaints/${id}/comments`, {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify({ message, isInternal })
@@ -96,7 +120,7 @@ export const api = {
   },
 
   async submitRating(id, rating, feedback) {
-    const res = await fetch(`${API_BASE_URL}/complaints/${id}/rating`, {
+    const res = await safeFetch(`${API_BASE_URL}/complaints/${id}/rating`, {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify({ rating, feedback })
@@ -108,7 +132,7 @@ export const api = {
 
   // --- Departments & Staff ---
   async getDepartments() {
-    const res = await fetch(`${API_BASE_URL}/departments`, {
+    const res = await safeFetch(`${API_BASE_URL}/departments`, {
       headers: getAuthHeaders()
     });
     const json = await res.json();
@@ -117,7 +141,7 @@ export const api = {
   },
 
   async updateDepartment(id, data) {
-    const res = await fetch(`${API_BASE_URL}/departments/${id}`, {
+    const res = await safeFetch(`${API_BASE_URL}/departments/${id}`, {
       method: 'PATCH',
       headers: getAuthHeaders(),
       body: JSON.stringify(data)
@@ -129,7 +153,7 @@ export const api = {
 
   async getStaff(params = {}) {
     const query = new URLSearchParams(params).toString();
-    const res = await fetch(`${API_BASE_URL}/staff?${query}`, {
+    const res = await safeFetch(`${API_BASE_URL}/staff?${query}`, {
       headers: getAuthHeaders()
     });
     const json = await res.json();
@@ -138,7 +162,7 @@ export const api = {
   },
 
   async getStaffById(id) {
-    const res = await fetch(`${API_BASE_URL}/staff/${id}`, {
+    const res = await safeFetch(`${API_BASE_URL}/staff/${id}`, {
       headers: getAuthHeaders()
     });
     const json = await res.json();
@@ -147,7 +171,7 @@ export const api = {
   },
 
   async getStaffOpenTickets(id) {
-    const res = await fetch(`${API_BASE_URL}/staff/${id}/open-tickets`, {
+    const res = await safeFetch(`${API_BASE_URL}/staff/${id}/open-tickets`, {
       headers: getAuthHeaders()
     });
     const json = await res.json();
@@ -156,7 +180,7 @@ export const api = {
   },
 
   async createStaff(data) {
-    const res = await fetch(`${API_BASE_URL}/staff`, {
+    const res = await safeFetch(`${API_BASE_URL}/staff`, {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify(data)
@@ -167,7 +191,7 @@ export const api = {
   },
 
   async updateStaff(id, data) {
-    const res = await fetch(`${API_BASE_URL}/staff/${id}`, {
+    const res = await safeFetch(`${API_BASE_URL}/staff/${id}`, {
       method: 'PATCH',
       headers: getAuthHeaders(),
       body: JSON.stringify(data)
@@ -178,7 +202,7 @@ export const api = {
   },
 
   async replaceAndTransferStaff(data) {
-    const res = await fetch(`${API_BASE_URL}/staff/replace`, {
+    const res = await safeFetch(`${API_BASE_URL}/staff/replace`, {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify(data)
@@ -193,7 +217,7 @@ export const api = {
   },
 
   async deactivateStaff(id, options = {}) {
-    const res = await fetch(`${API_BASE_URL}/staff/${id}/deactivate`, {
+    const res = await safeFetch(`${API_BASE_URL}/staff/${id}/deactivate`, {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify(options)
@@ -209,7 +233,7 @@ export const api = {
   },
 
   async reactivateStaff(id) {
-    const res = await fetch(`${API_BASE_URL}/staff/${id}/reactivate`, {
+    const res = await safeFetch(`${API_BASE_URL}/staff/${id}/reactivate`, {
       method: 'POST',
       headers: getAuthHeaders()
     });
@@ -220,7 +244,7 @@ export const api = {
 
   async deleteStaff(id, transferToStaffId = null) {
     const query = transferToStaffId ? `?transferToStaffId=${transferToStaffId}` : '';
-    const res = await fetch(`${API_BASE_URL}/staff/${id}${query}`, {
+    const res = await safeFetch(`${API_BASE_URL}/staff/${id}${query}`, {
       method: 'DELETE',
       headers: getAuthHeaders()
     });
@@ -231,11 +255,93 @@ export const api = {
 
   // --- Analytics ---
   async getAnalytics() {
-    const res = await fetch(`${API_BASE_URL}/analytics`, {
+    const res = await safeFetch(`${API_BASE_URL}/analytics`, {
       headers: getAuthHeaders()
     });
     const json = await res.json();
     if (!res.ok) throw new Error(json.error || 'Failed to fetch analytics');
     return json.stats;
+  },
+
+  // --- CampusCare Intelligence API ---
+  async getIntelligenceSummary(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    const res = await safeFetch(`${API_BASE_URL}/intelligence/summary?${query}`, {
+      headers: getAuthHeaders()
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Failed to fetch intelligence summary');
+    return json;
+  },
+
+  async getHeatmapData(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    const res = await safeFetch(`${API_BASE_URL}/intelligence/heatmap?${query}`, {
+      headers: getAuthHeaders()
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Failed to fetch heatmap data');
+    return json;
+  },
+
+  async getIntelligenceAlerts(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    const res = await safeFetch(`${API_BASE_URL}/intelligence/alerts?${query}`, {
+      headers: getAuthHeaders()
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Failed to fetch intelligence alerts');
+    return json.alerts || [];
+  },
+
+  async getRecurringProblems(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    const res = await safeFetch(`${API_BASE_URL}/intelligence/recurring-problems?${query}`, {
+      headers: getAuthHeaders()
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Failed to fetch recurring problems');
+    return json.recurringProblems || [];
+  },
+
+  async getSimilarComplaints(id) {
+    const res = await safeFetch(`${API_BASE_URL}/intelligence/similar/${id}`, {
+      headers: getAuthHeaders()
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Failed to fetch similar complaints');
+    return json;
+  },
+
+  async analyzeComplaintDraft(data) {
+    const res = await safeFetch(`${API_BASE_URL}/intelligence/analyze`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data)
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Failed to run complaint analysis');
+    return json.intelligence;
+  },
+
+  async getBuildingIntelligence(buildingIdOrName) {
+    const res = await safeFetch(`${API_BASE_URL}/intelligence/building/${encodeURIComponent(buildingIdOrName)}`, {
+      headers: getAuthHeaders()
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Failed to fetch building intelligence');
+    return json;
+  },
+
+  async linkComplaints(primaryId, linkedIds, note = '') {
+    const res = await safeFetch(`${API_BASE_URL}/intelligence/link-complaints`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ primaryId, linkedIds, note })
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Failed to link complaints');
+    return json;
   }
 };
+

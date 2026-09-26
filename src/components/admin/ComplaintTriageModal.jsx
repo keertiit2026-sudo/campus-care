@@ -4,6 +4,7 @@ import { Modal } from '../common/Modal';
 import { STATUSES, PRIORITIES } from '../../data/categories';
 import { DEPARTMENTS, STAFF_MEMBERS } from '../../data/departments';
 import { CategoryBadge, PriorityBadge } from '../common/Badge';
+import { SmartTriageCard } from '../intelligence/SmartTriageCard';
 import { 
   CheckCircle2, Edit3, ShieldAlert, Building, 
   UserCheck, AlertCircle, FileCheck, Camera, Sparkles, Check, Info
@@ -74,10 +75,27 @@ export const ComplaintTriageModal = () => {
       priority,
       assignedDepartment: department,
       assignedStaff: staffId || null,
-      statusNote: statusNote.trim() || `Triage updated by ${currentPersona.name}`,
+      statusNote: statusNote.trim() || `Triage updated by ${currentPersona?.name || 'Administrator'}`,
       resolutionNotes: status === 'Resolved' ? resolutionNotes.trim() : complaint.resolutionNotes,
       resolutionPhoto: status === 'Resolved' ? (resolutionPhoto.trim() || null) : complaint.resolutionPhoto
     });
+  };
+
+  const handleAcceptSuggestions = (suggestions) => {
+    if (suggestions.priority) setPriority(suggestions.priority);
+    if (suggestions.departmentId) setDepartment(suggestions.departmentId);
+    if (suggestions.staffId) setStaffId(suggestions.staffId);
+    if (status === 'Submitted' || status === 'Under Review') {
+      setStatus('In Progress');
+    }
+    setStatusNote('Applied automated CampusCare Intelligence recommendations');
+    if (addToast) {
+      addToast({
+        type: 'success',
+        title: 'Intelligence Applied',
+        message: 'CampusCare Intelligence suggestions applied to modal form.'
+      });
+    }
   };
 
   return (
@@ -90,6 +108,18 @@ export const ComplaintTriageModal = () => {
       icon={Edit3}
     >
       <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+        
+        {/* CampusCare Intelligence Module Card */}
+        <SmartTriageCard
+          complaint={complaint}
+          allComplaints={complaints}
+          currentCategory={complaint.category}
+          currentPriority={priority}
+          currentDepartmentId={department}
+          currentStaffId={staffId}
+          onAcceptSuggestions={handleAcceptSuggestions}
+        />
+
         {error && (
           <div style={{
             padding: '12px 16px',

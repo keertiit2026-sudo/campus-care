@@ -653,6 +653,10 @@ class Database {
     return staff.filter(u => (u.status || 'active') === filter);
   }
 
+  getStaff(statusFilter = 'active') {
+    return this.getStaffMembers(statusFilter);
+  }
+
   findStaffById(id) {
     return this.data.users.find(u => u.id === id && u.role === 'staff');
   }

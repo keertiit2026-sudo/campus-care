@@ -1,9 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { CATEGORIES, PRIORITIES } from '../../data/categories';
 import { CategoryIcon, CategoryBadge, PriorityBadge } from '../common/Badge';
 import { reverseGeocodeAddress, detectCurrentLocation } from '../../utils/geoUtils';
+import { analyzeDraftClient } from '../../utils/intelligenceEngine';
 import { api } from '../../api/client';
 import { 
   PlusCircle, AlertCircle, 
@@ -101,6 +102,20 @@ export const ComplaintSubmissionPage = () => {
   // Hidden separate file inputs
   const cameraInputRef = useRef(null);
   const galleryInputRef = useRef(null);
+
+  // Real-Time Client AI Smart Triage Suggestion
+  const liveAiTriage = useMemo(() => {
+    if ((!title || title.trim().length < 3) && (!description || description.trim().length < 5)) {
+      return null;
+    }
+    return analyzeDraftClient({
+      title,
+      description,
+      category,
+      priority,
+      location: buildingName ? `${buildingName} ${floorLevel} ${roomNumber}` : (gpsLocation?.address || '')
+    });
+  }, [title, description, category, priority, buildingName, floorLevel, roomNumber, gpsLocation]);
 
   // Save draft to sessionStorage on changes
   useEffect(() => {

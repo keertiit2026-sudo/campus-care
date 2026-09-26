@@ -6,6 +6,7 @@ import * as authCtrl from './controllers/authController.js';
 import * as complaintsCtrl from './controllers/complaintsController.js';
 import * as deptsCtrl from './controllers/departmentsController.js';
 import * as analyticsCtrl from './controllers/analyticsController.js';
+import * as intelligenceCtrl from './controllers/intelligenceController.js';
 
 dotenv.config();
 
@@ -67,6 +68,17 @@ app.delete('/api/staff/:id', authenticate, requireRole('admin'), deptsCtrl.delet
 
 // --- Analytics ---
 app.get('/api/analytics', authenticate, analyticsCtrl.getAnalytics);
+
+// --- CampusCare Intelligence Routes ---
+app.get('/api/intelligence/summary', authenticate, requireRole('admin', 'staff'), intelligenceCtrl.getIntelligenceSummary);
+app.get('/api/intelligence/heatmap', authenticate, requireRole('admin', 'staff'), intelligenceCtrl.getHeatmap);
+app.get('/api/intelligence/alerts', authenticate, requireRole('admin', 'staff'), intelligenceCtrl.getIntelligenceAlerts);
+app.get('/api/intelligence/recurring-problems', authenticate, requireRole('admin', 'staff'), intelligenceCtrl.getRecurringProblemsList);
+app.get('/api/intelligence/similar/:id', authenticate, intelligenceCtrl.getSimilarForComplaint);
+app.post('/api/intelligence/analyze', authenticate, intelligenceCtrl.analyzeComplaintPayload);
+app.post('/api/intelligence/analyze/:id', authenticate, intelligenceCtrl.analyzeComplaintPayload);
+app.get('/api/intelligence/building/:idOrName', authenticate, requireRole('admin', 'staff'), intelligenceCtrl.getBuildingAnalysis);
+app.post('/api/intelligence/link-complaints', authenticate, requireRole('admin', 'staff'), intelligenceCtrl.linkComplaints);
 
 // Global Error Handler
 app.use((err, req, res, next) => {

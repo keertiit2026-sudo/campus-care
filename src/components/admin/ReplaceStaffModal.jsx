@@ -579,7 +579,7 @@ export const ReplaceStaffModal = ({
                             </span>
                           </div>
                           <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '2px' }}>
-                            📍 {c.location}
+                            📍 {typeof c.location === 'object' ? (c.location.building || 'Campus') : (c.location || 'Campus')}
                           </div>
                         </div>
                       </div>

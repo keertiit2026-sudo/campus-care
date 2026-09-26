@@ -3,21 +3,29 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { api } from '../../api/client';
 import { DEPARTMENTS as FALLBACK_DEPARTMENTS, STAFF_MEMBERS as FALLBACK_STAFF } from '../../data/departments';
-import { STATUSES, PRIORITIES } from '../../data/categories';
+import { STATUSES, PRIORITIES, CATEGORIES } from '../../data/categories';
 import { CategoryBadge, PriorityBadge, StatusBadge } from '../common/Badge';
+import { SmartTriageCard } from '../intelligence/SmartTriageCard';
+import { formatLocationString } from '../../utils/intelligenceEngine';
 import { 
   Edit3, Building, UserCheck, CheckCircle2, 
-  ArrowLeft, Sparkles, Shield, MapPin, AlertCircle, Save 
+  ArrowLeft, Sparkles, Shield, MapPin, AlertCircle, Save, Loader2 
 } from 'lucide-react';
 
 export const ComplaintTriagePage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { complaints, triageComplaint, currentPersona, addToast } = useApp();
+  const { complaints = [], triageComplaint, currentPersona, addToast } = useApp();
 
-  const complaint = complaints.find(c => String(c.id).toLowerCase() === String(id).toLowerCase());
+  const contextComplaint = complaints.find(c => String(c.id).toLowerCase() === String(id).toLowerCase());
+  const [fetchedComplaint, setFetchedComplaint] = useState(null);
+  const [isLoadingTicket, setIsLoadingTicket] = useState(!contextComplaint);
+
+  const complaint = contextComplaint || fetchedComplaint;
 
   const [status, setStatus] = useState('Submitted');
+  const [category, setCategory] = useState('wifi_it');
+  const [priority, setPriority] = useState('medium');
   const [departmentId, setDepartmentId] = useState('');
   const [staffId, setStaffId] = useState('');
   const [statusNote, setStatusNote] = useState('');
@@ -28,6 +36,24 @@ export const ComplaintTriagePage = () => {
   // Live active staff & departments
   const [departments, setDepartments] = useState(FALLBACK_DEPARTMENTS);
   const [activeStaffList, setActiveStaffList] = useState(FALLBACK_STAFF.filter(s => (s.status || 'active') === 'active'));
+
+  useEffect(() => {
+    if (!contextComplaint && id) {
+      setIsLoadingTicket(true);
+      api.getComplaintById(id)
+        .then(res => {
+          if (res) setFetchedComplaint(res);
+        })
+        .catch(err => {
+          console.warn('Could not fetch complaint by ID from API:', err);
+        })
+        .finally(() => {
+          setIsLoadingTicket(false);
+        });
+    } else {
+      setIsLoadingTicket(false);
+    }
+  }, [id, contextComplaint]);
 
   useEffect(() => {
     // Fetch live active staff & departments
@@ -51,12 +77,24 @@ export const ComplaintTriagePage = () => {
   useEffect(() => {
     if (complaint) {
       setStatus(complaint.status || 'Submitted');
+      setCategory(complaint.category || 'wifi_it');
+      setPriority(complaint.priority || 'medium');
       setDepartmentId(complaint.assignedDepartment || '');
       setStaffId(complaint.assignedStaff || '');
       setResolutionNotes(complaint.resolutionNotes || '');
       setError('');
     }
   }, [complaint]);
+
+  if (isLoadingTicket) {
+    return (
+      <div className="glass-panel" style={{ padding: '60px 24px', textAlign: 'center', maxWidth: '600px', margin: '40px auto', borderRadius: '20px' }}>
+        <Loader2 size={36} className="spin" color="#ec4899" style={{ margin: '0 auto 16px auto', animation: 'spin 1s linear infinite' }} />
+        <h3 style={{ fontSize: '1.2rem', fontWeight: 800 }}>Loading Ticket Data...</h3>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Preparing automated triage workspace...</p>
+      </div>
+    );
+  }
 
   if (!complaint) {
     return (
@@ -90,6 +128,11 @@ export const ComplaintTriagePage = () => {
     setError('');
   };
 
+  const handleScrollToForm = () => {
+    const el = document.getElementById('manual-triage-form');
+    if (el) el.scrollIntoView({ behavior: 'smooth' });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -106,10 +149,12 @@ export const ComplaintTriagePage = () => {
     try {
       await triageComplaint(complaint.id, {
         status,
-        statusNote: statusNote.trim() || `Triage update processed by ${currentPersona.name}`,
+        category,
+        priority,
+        statusNote: statusNote.trim() || `Triage update processed by ${currentPersona?.name || 'Administrator'}`,
         assignedDepartment: departmentId || null,
         assignedStaff: staffId || null,
-        resolutionNotes: isResolvedOrClosed ? resolutionNotes.trim() : complaint.resolutionNotes
+        resolutionNotes: isResolvedOrClosed ? resolutionNotes.trim() : (complaint.resolutionNotes || '')
       });
 
       navigate(`/complaints/${complaint.id}`);
@@ -121,6 +166,12 @@ export const ComplaintTriagePage = () => {
   };
 
   const handleAcceptSuggestions = (suggestions) => {
+    if (suggestions.category) {
+      setCategory(suggestions.category);
+    }
+    if (suggestions.priority) {
+      setPriority(suggestions.priority);
+    }
     if (suggestions.departmentId) {
       setDepartmentId(suggestions.departmentId);
     }
@@ -130,12 +181,12 @@ export const ComplaintTriagePage = () => {
     if (status === 'Submitted') {
       setStatus('In Progress');
     }
-    setStatusNote('Applied automated Smart AI recommendations (Department & Technician)');
+    setStatusNote('Applied CampusCare Intelligence automated recommendations (Category, Priority, Dept & Staff)');
     if (addToast) {
       addToast({
         type: 'success',
-        title: 'AI Suggestions Applied',
-        message: 'Smart AI triage recommendations applied!'
+        title: 'Intelligence Applied',
+        message: 'CampusCare Intelligence suggestions applied to form.'
       });
     }
   };
@@ -206,10 +257,24 @@ export const ComplaintTriagePage = () => {
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px', fontSize: '0.8rem', color: 'var(--text-muted)', flexWrap: 'wrap' }}>
             <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <MapPin size={13} color="var(--accent-cyan)" /> {complaint.location}
+              <MapPin size={13} color="var(--accent-cyan)" /> {formatLocationString(complaint.location)}
             </span>
-            <span>Student: <strong>{complaint.student?.name || 'Student'}</strong></span>
+            <span>Student: <strong>{complaint.student?.name || (typeof complaint.student === 'string' ? complaint.student : 'Student')}</strong></span>
           </div>
+        </div>
+
+        {/* Smart Complaint Analysis & Duplicate Detection Module */}
+        <div style={{ marginBottom: '24px' }}>
+          <SmartTriageCard
+            complaint={complaint}
+            allComplaints={complaints}
+            currentCategory={category}
+            currentPriority={priority}
+            currentDepartmentId={departmentId}
+            currentStaffId={staffId}
+            onAcceptSuggestions={handleAcceptSuggestions}
+            onModify={handleScrollToForm}
+          />
         </div>
 
         {/* Feedback Alerts */}
@@ -231,7 +296,7 @@ export const ComplaintTriagePage = () => {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <form id="manual-triage-form" onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           
           {/* Status Selection */}
           <div className="input-group" style={{ marginBottom: 0 }}>
@@ -265,6 +330,35 @@ export const ComplaintTriagePage = () => {
                   </button>
                 );
               })}
+            </div>
+          </div>
+
+          {/* Category & Priority Manual Selection */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
+            <div className="input-group" style={{ marginBottom: 0 }}>
+              <label className="input-label">Complaint Category</label>
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="input-control"
+              >
+                {CATEGORIES.map(c => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="input-group" style={{ marginBottom: 0 }}>
+              <label className="input-label">Urgency & Priority</label>
+              <select
+                value={priority}
+                onChange={(e) => setPriority(e.target.value)}
+                className="input-control"
+              >
+                {PRIORITIES.map(p => (
+                  <option key={p.id} value={p.id}>{p.name} ({p.eta})</option>
+                ))}
+              </select>
             </div>
           </div>
 
