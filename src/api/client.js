@@ -1,10 +1,10 @@
-const rawBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const rawBaseUrl = import.meta.env.VITE_API_URL || 'https://campus-care-backend-6acz.onrender.com/api';
 const API_BASE_URL = rawBaseUrl.endsWith('/') ? rawBaseUrl.slice(0, -1) : rawBaseUrl;
 
 // Check if running in an HTTPS production environment where http://localhost is unreachable
 const isHttpsProd = typeof window !== 'undefined' && window.location.protocol === 'https:' && API_BASE_URL.startsWith('http://localhost');
 
-async function safeFetch(url, options = {}, timeoutMs = 2500) {
+async function safeFetch(url, options = {}, timeoutMs = 8000) {
   if (isHttpsProd && url.startsWith('http://localhost')) {
     throw new Error('Localhost API server is not reachable over HTTPS in cloud deployment.');
   }
