@@ -4,6 +4,7 @@ import { useApp } from '../../context/AppContext';
 import { CATEGORIES, PRIORITIES } from '../../data/categories';
 import { CategoryIcon, CategoryBadge, PriorityBadge } from '../common/Badge';
 import { reverseGeocodeAddress, detectCurrentLocation } from '../../utils/geoUtils';
+import { LocationPicker } from './LocationPicker';
 import { analyzeDraftClient } from '../../utils/intelligenceEngine';
 import { api } from '../../api/client';
 import { 
@@ -614,282 +615,25 @@ export const ComplaintSubmissionPage = () => {
             )}
           </div>
 
-          {/* --- EXACT CAMPUS LOCATION SECTION (MANUAL + GPS) --- */}
-          <div style={{
-            padding: '22px',
-            backgroundColor: 'var(--bg-tertiary)',
-            borderRadius: '18px',
-            border: '1px solid var(--border-color)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '18px'
-          }}>
-            {/* Section Header with GPS Button */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <MapPin size={19} color="var(--accent-cyan)" />
-                <span style={{ fontWeight: 800, fontSize: '0.975rem', color: 'var(--text-primary)' }}>
-                  Exact Campus Location & Floor Level <span style={{ color: '#ef4444' }}>*</span>
-                </span>
-              </div>
-
-              {/* 1. USE MY CURRENT LOCATION BUTTON */}
-              <button
-                type="button"
-                onClick={handleGetGPSLocation}
-                disabled={gpsLoading}
-                className="btn btn-secondary btn-sm"
-                style={{
-                  gap: '6px',
-                  backgroundColor: gpsSuccess ? 'rgba(16, 185, 129, 0.15)' : 'rgba(6, 182, 212, 0.15)',
-                  borderColor: gpsSuccess ? 'rgba(16, 185, 129, 0.4)' : 'rgba(6, 182, 212, 0.4)',
-                  color: gpsSuccess ? '#10b981' : 'var(--accent-cyan)',
-                  fontWeight: 700,
-                  fontSize: '0.825rem'
-                }}
-              >
-                {gpsLoading ? (
-                  <>
-                    <RefreshCw size={14} className="animate-spin" />
-                    <span>📍 Getting your location...</span>
-                  </>
-                ) : gpsSuccess ? (
-                  <>
-                    <CheckCircle2 size={14} color="#10b981" />
-                    <span>✓ Location Detected</span>
-                  </>
-                ) : (
-                  <>
-                    <MapPin size={14} />
-                    <span>📍 Use My Current Location</span>
-                  </>
-                )}
-              </button>
-            </div>
-
-            {/* GPS Status Card (Displayed when detected, loading, or errored) */}
-            {gpsLoading && (
-              <div style={{
-                padding: '12px 16px',
-                backgroundColor: 'rgba(6, 182, 212, 0.12)',
-                border: '1px solid rgba(6, 182, 212, 0.3)',
-                borderRadius: '12px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '10px',
-                color: 'var(--accent-cyan)',
-                fontSize: '0.85rem'
-              }}>
-                <RefreshCw size={16} className="animate-spin" />
-                <span>📍 Getting your location... Detecting general readable address</span>
-              </div>
-            )}
-
-            {gpsSuccess && gpsLocation?.address && (
-              <div style={{
-                padding: '14px 18px',
-                backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                border: '1px solid rgba(16, 185, 129, 0.35)',
-                borderRadius: '12px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                flexWrap: 'wrap',
-                gap: '12px'
-              }}>
-                <div style={{ flex: 1, minWidth: '240px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#10b981', fontWeight: 800, fontSize: '0.875rem' }}>
-                    <CheckCircle2 size={16} />
-                    <span>✓ Real-time Location Detected</span>
-                  </div>
-                  {isEditingGpsAddress ? (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px' }}>
-                      <input
-                        type="text"
-                        className="input"
-                        value={gpsLocation.address}
-                        onChange={(e) => setGpsLocation(prev => ({ ...prev, address: e.target.value }))}
-                        style={{ fontSize: '0.85rem', padding: '5px 10px', height: '34px', width: '100%', maxWidth: '420px' }}
-                        autoFocus
-                        placeholder="Edit detected campus area/zone..."
-                      />
-                      <button
-                        type="button"
-                        className="btn btn-primary btn-sm"
-                        onClick={() => setIsEditingGpsAddress(false)}
-                        style={{ fontSize: '0.75rem', padding: '5px 10px', height: '34px' }}
-                      >
-                        <Check size={14} />
-                        <span>Save</span>
-                      </button>
-                    </div>
-                  ) : (
-                    <div style={{ marginTop: '5px', fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                      {gpsLocation.address}
-                    </div>
-                  )}
-                </div>
-
-                <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                  {!isEditingGpsAddress && (
-                    <button
-                      type="button"
-                      onClick={() => setIsEditingGpsAddress(true)}
-                      className="btn btn-ghost btn-sm"
-                      style={{ fontSize: '0.75rem', padding: '4px 8px', color: 'var(--text-secondary)' }}
-                      title="Edit detected address string"
-                    >
-                      <Edit2 size={13} />
-                      <span>Edit</span>
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={handleGetGPSLocation}
-                    className="btn btn-ghost btn-sm"
-                    style={{ fontSize: '0.75rem', padding: '4px 8px', color: 'var(--text-muted)' }}
-                    title="Refresh fresh GPS reading"
-                  >
-                    <RefreshCw size={13} className={gpsLoading ? 'animate-spin' : ''} />
-                    <span>Update</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleClearGPS}
-                    className="btn btn-ghost btn-sm"
-                    style={{ fontSize: '0.75rem', padding: '4px 8px', color: '#ef4444' }}
-                    title="Remove GPS location"
-                  >
-                    <X size={13} />
-                    <span>Remove</span>
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {gpsError && (
-              <div style={{
-                padding: '12px 16px',
-                backgroundColor: 'rgba(239, 68, 68, 0.12)',
-                border: '1px solid rgba(239, 68, 68, 0.3)',
-                borderRadius: '12px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: '10px',
-                color: '#ef4444',
-                fontSize: '0.825rem'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <AlertCircle size={16} />
-                  <span>{gpsError}</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleGetGPSLocation}
-                  className="btn btn-secondary btn-sm"
-                  style={{ fontSize: '0.75rem', padding: '3px 8px' }}
-                >
-                  Retry
-                </button>
-              </div>
-            )}
-
-            {/* Manual Location Inputs */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '14px' }}>
-              {/* Building */}
-              <div className="input-group" style={{ marginBottom: 0 }}>
-                <label className="input-label" style={{ fontSize: '0.825rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Building size={14} color="var(--primary-400)" />
-                  <span>Building / Campus Zone {gpsSuccess ? <span style={{ color: '#10b981', fontSize: '0.72rem', fontWeight: 600 }}>(Auto-detected)</span> : <span style={{ color: '#ef4444' }}>*</span>}</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder={gpsLocation?.buildingName || "e.g. Academic Block, Main Building, CS Lab Block"}
-                  value={buildingName}
-                  onChange={(e) => setBuildingName(e.target.value)}
-                  className="input-control"
-                  style={{ fontSize: '0.875rem', borderColor: errors.buildingName ? '#ef4444' : undefined }}
-                />
-                {errors.buildingName && (
-                  <span style={{ fontSize: '0.75rem', color: '#ef4444', marginTop: '2px' }}>
-                    {errors.buildingName}
-                  </span>
-                )}
-              </div>
-
-              {/* Room */}
-              <div className="input-group" style={{ marginBottom: 0 }}>
-                <label className="input-label" style={{ fontSize: '0.825rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <DoorOpen size={14} color="var(--primary-400)" />
-                  <span>Room No. / Lab / Specific Spot <span style={{ color: 'var(--text-muted)', fontSize: '0.72rem', fontWeight: 500 }}>(Optional)</span></span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Room 304, Lab 3, Washroom, Corridor"
-                  value={roomNumber}
-                  onChange={(e) => setRoomNumber(e.target.value)}
-                  className="input-control"
-                  style={{ fontSize: '0.875rem' }}
-                />
-              </div>
-            </div>
-
-            {/* Floor Level */}
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
-                <Layers size={14} color="var(--primary-400)" />
-                <label className="input-label" style={{ marginBottom: 0, fontSize: '0.825rem', fontWeight: 700 }}>
-                  Floor Level <span style={{ color: '#ef4444' }}>*</span>
-                </label>
-              </div>
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(85px, 1fr))',
-                gap: '8px'
-              }}>
-                {FLOOR_OPTIONS.map(f => {
-                  const isSelected = floorLevel === f;
-                  return (
-                    <button
-                      key={f}
-                      type="button"
-                      onClick={() => setFloorLevel(f)}
-                      style={{
-                        padding: '9px 6px',
-                        borderRadius: '10px',
-                        border: isSelected ? '2px solid var(--primary-500)' : '1px solid var(--border-color)',
-                        backgroundColor: isSelected ? 'rgba(99, 102, 241, 0.25)' : 'var(--bg-card)',
-                        color: isSelected ? 'var(--primary-300)' : 'var(--text-secondary)',
-                        fontWeight: isSelected ? 800 : 600,
-                        fontSize: '0.8rem',
-                        cursor: 'pointer',
-                        transition: 'all 0.15s',
-                        textAlign: 'center'
-                      }}
-                    >
-                      {f}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Additional Details */}
-            <div className="input-group" style={{ marginBottom: 0 }}>
-              <label className="input-label" style={{ fontSize: '0.825rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <AlignLeft size={14} color="var(--text-muted)" />
-                <span>Additional Location Details (Optional)</span>
-              </label>
-              <textarea
-                placeholder="e.g. Near staircase, beside Room 305, opposite laboratory..."
-                value={additionalDetails}
-                onChange={(e) => setAdditionalDetails(e.target.value)}
-                className="input-control"
-                style={{ minHeight: '65px', fontSize: '0.85rem' }}
-              />
-            </div>
-          </div>
+          {/* --- EXACT CAMPUS LOCATION SECTION (LOCATION PICKER) --- */}
+          <LocationPicker
+            gpsLocation={gpsLocation}
+            setGpsLocation={setGpsLocation}
+            buildingName={buildingName}
+            setBuildingName={setBuildingName}
+            floorLevel={floorLevel}
+            setFloorLevel={setFloorLevel}
+            roomNumber={roomNumber}
+            setRoomNumber={setRoomNumber}
+            additionalDetails={additionalDetails}
+            setAdditionalDetails={setAdditionalDetails}
+            error={errors.buildingName}
+          />
+          {errors.buildingName && (
+            <span style={{ fontSize: '0.75rem', color: '#ef4444', marginTop: '-12px', display: 'block' }}>
+              {errors.buildingName}
+            </span>
+          )}
 
           {/* Description */}
           <div className="input-group" style={{ marginBottom: 0 }}>
