@@ -69,7 +69,12 @@ export const ProfilePage = () => {
     designation: '',
     bio: '',
     emergencyContact: '',
-    avatar: ''
+    avatar: '',
+    // Campus Credentials fields
+    enrollmentStatus: 'Enrolled & Verified',
+    portalRole: 'student',
+    registeredBatch: 'Academic Year 2024–2028',
+    slaTier: 'Standard Tier (24h)'
   });
 
   // Password Form state
@@ -107,15 +112,19 @@ export const ProfilePage = () => {
         designation: user.designation || user.roleTitle || (user.role === 'admin' ? 'Dean of Campus Infrastructure' : user.role === 'staff' ? 'Lead Systems Specialist' : 'Undergraduate Scholar'),
         bio: user.bio || 'Passionate student advocating for a cleaner, smarter, and safer campus community.',
         emergencyContact: user.emergencyContact || 'Dr. M. Sharma (+91 98450 11223)',
-        avatar: user.avatar || defaultAvatar
+        avatar: user.avatar || defaultAvatar,
+        enrollmentStatus: user.enrollmentStatus || 'Enrolled & Verified',
+        portalRole: user.portalRole || user.role || 'student',
+        registeredBatch: user.registeredBatch || 'Academic Year 2024–2028',
+        slaTier: user.slaTier || 'Standard Tier (24h)'
       });
       setPreviewAvatar(user.avatar || defaultAvatar);
     }
   }, [user]);
 
-  const isStudent = user?.role === 'student' || !user?.role;
-  const isStaff = user?.role === 'staff';
-  const isAdmin = user?.role === 'admin';
+  const isStudent = formData.portalRole === 'student' || user?.role === 'student' || !user?.role;
+  const isStaff = formData.portalRole === 'staff' || user?.role === 'staff';
+  const isAdmin = formData.portalRole === 'admin' || user?.role === 'admin';
 
   // User tickets list
   const userTickets = (complaints || []).filter(item => {
@@ -176,7 +185,6 @@ export const ProfilePage = () => {
       return;
     }
 
-    // 5MB limit check
     if (file.size > 5 * 1024 * 1024) {
       addToast({
         type: 'error',
@@ -248,7 +256,11 @@ export const ProfilePage = () => {
         designation: formData.designation,
         bio: formData.bio,
         emergencyContact: formData.emergencyContact,
-        avatar: formData.avatar
+        avatar: formData.avatar,
+        enrollmentStatus: formData.enrollmentStatus,
+        portalRole: formData.portalRole,
+        registeredBatch: formData.registeredBatch,
+        slaTier: formData.slaTier
       });
 
       try {
@@ -258,7 +270,7 @@ export const ProfilePage = () => {
       addToast({
         type: 'success',
         title: 'Profile Updated ✨',
-        message: 'Your personal details have been saved successfully.'
+        message: 'Your personal details and credentials have been saved.'
       });
       setIsEditing(false);
     } catch (err) {
@@ -407,7 +419,7 @@ export const ProfilePage = () => {
         </div>
       </div>
 
-      {/* 2. Hero Persona Card (Clean layout with NO overlapping) */}
+      {/* 2. Hero Persona Card */}
       <div
         className="glass-panel"
         style={{
@@ -442,10 +454,10 @@ export const ProfilePage = () => {
         <div style={{ padding: '0 28px 24px 28px', backgroundColor: '#ffffff' }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '20px' }}>
             
-            {/* Left: Avatar + Details in clear hierarchy */}
+            {/* Left: Avatar + Details */}
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '22px', flexWrap: 'wrap' }}>
               
-              {/* Avatar Box (Only Avatar overlaps top banner cleanly) */}
+              {/* Avatar Box */}
               <div style={{ position: 'relative', marginTop: '-48px', flexShrink: 0 }}>
                 <img
                   src={formData.avatar}
@@ -493,7 +505,7 @@ export const ProfilePage = () => {
                 </button>
               </div>
 
-              {/* Name & Metadata (Completely in the white section with generous top padding) */}
+              {/* Name & Metadata */}
               <div style={{ paddingTop: '14px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                   <h1 style={{ fontSize: '1.65rem', fontWeight: 800, color: '#1E1B4B', margin: 0, lineHeight: 1.2 }}>
@@ -1001,39 +1013,115 @@ export const ProfilePage = () => {
           {/* Right Sidebar Details */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             
-            {/* Campus Identity Badge */}
+            {/* Campus Credentials Card (Fully Editable in Edit Mode) */}
             <div className="glass-panel" style={{ padding: '20px', borderRadius: '20px', background: 'linear-gradient(180deg, #ffffff 0%, #FFF5F9 100%)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
-                <div style={{ width: '36px', height: '36px', borderRadius: '10px', backgroundColor: 'rgba(236, 72, 153, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#EC4899' }}>
-                  <ShieldCheck size={20} />
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ width: '36px', height: '36px', borderRadius: '10px', backgroundColor: 'rgba(236, 72, 153, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#EC4899' }}>
+                    <ShieldCheck size={20} />
+                  </div>
+                  <div>
+                    <h4 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#1E1B4B', margin: 0 }}>
+                      Campus Credentials
+                    </h4>
+                    <p style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', margin: 0 }}>
+                      Official ID & Verification
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h4 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#1E1B4B', margin: 0 }}>
-                    Campus Credentials
-                  </h4>
-                  <p style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', margin: 0 }}>
-                    Official ID & Verification
-                  </p>
-                </div>
+
+                {!isEditing && (
+                  <button
+                    type="button"
+                    onClick={() => setIsEditing(true)}
+                    style={{ background: 'none', border: 'none', color: '#EC4899', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                  >
+                    <Edit3 size={12} />
+                    <span>Edit</span>
+                  </button>
+                )}
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '0.825rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid rgba(249, 168, 212, 0.4)' }}>
-                  <span style={{ color: 'var(--text-secondary)' }}>Status:</span>
-                  <span style={{ fontWeight: 700, color: '#10B981' }}>Enrolled & Verified</span>
+                
+                {/* 1. Enrollment Status */}
+                <div style={{ paddingBottom: '8px', borderBottom: '1px solid rgba(249, 168, 212, 0.4)' }}>
+                  <span style={{ color: 'var(--text-secondary)', display: 'block', marginBottom: '4px', fontSize: '0.75rem', fontWeight: 600 }}>Enrollment Status:</span>
+                  {isEditing ? (
+                    <select
+                      className="input-control"
+                      value={formData.enrollmentStatus}
+                      onChange={(e) => setFormData({ ...formData, enrollmentStatus: e.target.value })}
+                      style={{ padding: '4px 8px', fontSize: '0.8rem' }}
+                    >
+                      <option value="Enrolled & Verified">Enrolled & Verified</option>
+                      <option value="Active Student">Active Student</option>
+                      <option value="Dean's Honor Scholar">Dean's Honor Scholar</option>
+                      <option value="Research Fellow">Research Fellow</option>
+                      <option value="Exchange Student">Exchange Student</option>
+                      <option value="Staff on Duty">Staff on Duty</option>
+                    </select>
+                  ) : (
+                    <span style={{ fontWeight: 700, color: '#10B981' }}>{formData.enrollmentStatus}</span>
+                  )}
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid rgba(249, 168, 212, 0.4)' }}>
-                  <span style={{ color: 'var(--text-secondary)' }}>Portal Role:</span>
-                  <span style={{ fontWeight: 700, color: '#EC4899', textTransform: 'capitalize' }}>{user?.role || 'Student'}</span>
+
+                {/* 2. Portal Role */}
+                <div style={{ paddingBottom: '8px', borderBottom: '1px solid rgba(249, 168, 212, 0.4)' }}>
+                  <span style={{ color: 'var(--text-secondary)', display: 'block', marginBottom: '4px', fontSize: '0.75rem', fontWeight: 600 }}>Portal Role:</span>
+                  {isEditing ? (
+                    <select
+                      className="input-control"
+                      value={formData.portalRole}
+                      onChange={(e) => setFormData({ ...formData, portalRole: e.target.value })}
+                      style={{ padding: '4px 8px', fontSize: '0.8rem' }}
+                    >
+                      <option value="student">Student</option>
+                      <option value="staff">Staff Officer</option>
+                      <option value="admin">Campus Admin</option>
+                    </select>
+                  ) : (
+                    <span style={{ fontWeight: 700, color: '#EC4899', textTransform: 'capitalize' }}>{formData.portalRole}</span>
+                  )}
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid rgba(249, 168, 212, 0.4)' }}>
-                  <span style={{ color: 'var(--text-secondary)' }}>Registered:</span>
-                  <span style={{ fontWeight: 600, color: '#1E1B4B' }}>Academic Year 2024–2028</span>
+
+                {/* 3. Registered Batch / Year Range */}
+                <div style={{ paddingBottom: '8px', borderBottom: '1px solid rgba(249, 168, 212, 0.4)' }}>
+                  <span style={{ color: 'var(--text-secondary)', display: 'block', marginBottom: '4px', fontSize: '0.75rem', fontWeight: 600 }}>Registered Batch / Period:</span>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      className="input-control"
+                      placeholder="e.g. Academic Year 2024–2028"
+                      value={formData.registeredBatch}
+                      onChange={(e) => setFormData({ ...formData, registeredBatch: e.target.value })}
+                      style={{ padding: '4px 8px', fontSize: '0.8rem' }}
+                    />
+                  ) : (
+                    <span style={{ fontWeight: 600, color: '#1E1B4B' }}>{formData.registeredBatch}</span>
+                  )}
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: 'var(--text-secondary)' }}>SLA Priority:</span>
-                  <span style={{ fontWeight: 700, color: '#8B5CF6' }}>Standard Tier (24h)</span>
+
+                {/* 4. SLA Priority Tier */}
+                <div>
+                  <span style={{ color: 'var(--text-secondary)', display: 'block', marginBottom: '4px', fontSize: '0.75rem', fontWeight: 600 }}>SLA Service Priority:</span>
+                  {isEditing ? (
+                    <select
+                      className="input-control"
+                      value={formData.slaTier}
+                      onChange={(e) => setFormData({ ...formData, slaTier: e.target.value })}
+                      style={{ padding: '4px 8px', fontSize: '0.8rem' }}
+                    >
+                      <option value="Standard Tier (24h)">Standard Tier (24h)</option>
+                      <option value="Priority Tier (12h)">Priority Tier (12h)</option>
+                      <option value="Urgent Tier (6h)">Urgent Tier (6h)</option>
+                      <option value="VIP Student Welfare">VIP Student Welfare</option>
+                    </select>
+                  ) : (
+                    <span style={{ fontWeight: 700, color: '#8B5CF6' }}>{formData.slaTier}</span>
+                  )}
                 </div>
+
               </div>
             </div>
 

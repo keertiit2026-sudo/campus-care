@@ -914,15 +914,16 @@ export const DepartmentsView = () => {
                                 <td style={{ padding: '14px 16px' }}>
                                   <span
                                     style={{
-                                      fontFamily: 'monospace',
+                                      fontFamily: 'var(--font-body)',
                                       fontSize: '0.75rem',
                                       fontWeight: 700,
-                                      color: 'var(--text-secondary)',
-                                      backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                                      padding: '2px 7px',
-                                      borderRadius: '4px',
-                                      border: '1px solid var(--border-color)',
-                                      whiteSpace: 'nowrap'
+                                      color: '#1E1B4B',
+                                      backgroundColor: '#FDF2F8',
+                                      padding: '3px 8px',
+                                      borderRadius: '6px',
+                                      border: '1px solid rgba(249, 168, 212, 0.6)',
+                                      whiteSpace: 'nowrap',
+                                      display: 'inline-block'
                                     }}
                                   >
                                     {st.employeeId || `EMP-${st.id.slice(-4)}`}
@@ -991,13 +992,15 @@ export const DepartmentsView = () => {
                                   {isActive ? (
                                     <span
                                       style={{
-                                        fontSize: '0.7rem',
-                                        fontWeight: 800,
-                                        padding: '2px 8px',
-                                        borderRadius: 'var(--radius-full)',
-                                        backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                                        fontSize: '0.74rem',
+                                        fontWeight: 700,
+                                        padding: '4px 10px',
+                                        borderRadius: '9999px',
+                                        backgroundColor: 'rgba(16, 185, 129, 0.12)',
                                         color: '#10b981',
-                                        border: '1px solid rgba(16, 185, 129, 0.3)'
+                                        border: '1px solid rgba(16, 185, 129, 0.3)',
+                                        whiteSpace: 'nowrap',
+                                        display: 'inline-block'
                                       }}
                                     >
                                       Active
@@ -1005,13 +1008,15 @@ export const DepartmentsView = () => {
                                   ) : isLeft ? (
                                     <span
                                       style={{
-                                        fontSize: '0.7rem',
-                                        fontWeight: 800,
-                                        padding: '2px 8px',
-                                        borderRadius: 'var(--radius-full)',
-                                        backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                                        fontSize: '0.74rem',
+                                        fontWeight: 700,
+                                        padding: '4px 10px',
+                                        borderRadius: '9999px',
+                                        backgroundColor: 'rgba(239, 68, 68, 0.12)',
                                         color: '#ef4444',
-                                        border: '1px solid rgba(239, 68, 68, 0.3)'
+                                        border: '1px solid rgba(239, 68, 68, 0.3)',
+                                        whiteSpace: 'nowrap',
+                                        display: 'inline-block'
                                       }}
                                     >
                                       Left College
@@ -1019,13 +1024,15 @@ export const DepartmentsView = () => {
                                   ) : (
                                     <span
                                       style={{
-                                        fontSize: '0.7rem',
-                                        fontWeight: 800,
-                                        padding: '2px 8px',
-                                        borderRadius: 'var(--radius-full)',
-                                        backgroundColor: 'rgba(148, 163, 184, 0.15)',
-                                        color: 'var(--text-muted)',
-                                        border: '1px solid rgba(148, 163, 184, 0.3)'
+                                        fontSize: '0.74rem',
+                                        fontWeight: 700,
+                                        padding: '4px 10px',
+                                        borderRadius: '9999px',
+                                        backgroundColor: 'rgba(148, 163, 184, 0.12)',
+                                        color: '#64748b',
+                                        border: '1px solid rgba(148, 163, 184, 0.3)',
+                                        whiteSpace: 'nowrap',
+                                        display: 'inline-block'
                                       }}
                                     >
                                       Inactive

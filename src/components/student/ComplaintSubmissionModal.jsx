@@ -95,10 +95,6 @@ export const ComplaintSubmissionModal = () => {
     return () => stopCameraStream();
   }, [modalState.isOpen]);
 
-  if (!modalState.isOpen || modalState.type !== 'submit') {
-    return null;
-  }
-
   // --- Start Live Camera Viewfinder ---
   const startLiveCamera = async (facingMode = 'environment') => {
     if (attachments.length >= MAX_PHOTOS) {
