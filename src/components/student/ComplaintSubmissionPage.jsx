@@ -4,7 +4,7 @@ import { useApp } from '../../context/AppContext';
 import { CATEGORIES, PRIORITIES } from '../../data/categories';
 import { CategoryIcon, CategoryBadge, PriorityBadge } from '../common/Badge';
 import { reverseGeocodeAddress, detectCurrentLocation } from '../../utils/geoUtils';
-import { LocationPicker } from './LocationPicker';
+import { GpsMapView } from './GpsMapView';
 import { analyzeDraftClient } from '../../utils/intelligenceEngine';
 import { api } from '../../api/client';
 import { 
@@ -615,8 +615,8 @@ export const ComplaintSubmissionPage = () => {
             )}
           </div>
 
-          {/* --- EXACT CAMPUS LOCATION SECTION (LOCATION PICKER) --- */}
-          <LocationPicker
+          {/* --- REAL AUTOMATIC GPS MAP VIEWPORT --- */}
+          <GpsMapView
             gpsLocation={gpsLocation}
             setGpsLocation={setGpsLocation}
             buildingName={buildingName}
