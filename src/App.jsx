@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { AppProvider } from './context/AppContext';
 import { Header } from './components/layout/Header';
@@ -30,6 +30,16 @@ import { ErrorBoundary } from './components/common/ErrorBoundary';
 const MainLayout = () => {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+
+  // Restore route if redirected from 404.html on Netlify
+  React.useEffect(() => {
+    const redirectPath = sessionStorage.getItem('spa_redirect');
+    if (redirectPath && redirectPath !== '/' && redirectPath !== '/index.html') {
+      sessionStorage.removeItem('spa_redirect');
+      navigate(redirectPath, { replace: true });
+    }
+  }, [navigate]);
 
   const isLandingRoute = location.pathname === '/welcome' || location.pathname === '/home';
 
