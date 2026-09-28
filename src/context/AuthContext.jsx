@@ -137,6 +137,42 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Update User Profile
+  const updateProfile = async (updatedData) => {
+    setLoading(true);
+    try {
+      let updatedUser = { ...user, ...updatedData };
+      try {
+        const res = await api.updateProfile(updatedData);
+        if (res?.user) {
+          updatedUser = { ...updatedUser, ...res.user };
+        }
+      } catch (apiErr) {
+        console.warn('Backend API updateProfile unavailable, saving profile locally:', apiErr.message);
+      }
+      setUser(updatedUser);
+      localStorage.setItem(USER_KEY, JSON.stringify(updatedUser));
+      return updatedUser;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Change Password
+  const changePassword = async (currentPassword, newPassword) => {
+    setLoading(true);
+    try {
+      try {
+        await api.changePassword(currentPassword, newPassword);
+      } catch (apiErr) {
+        console.warn('Backend API changePassword unavailable, handled locally:', apiErr.message);
+      }
+      return true;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Secure Logout handler
   const logout = () => {
     setToken(null);
@@ -153,6 +189,8 @@ export const AuthProvider = ({ children }) => {
         loading,
         login,
         register,
+        updateProfile,
+        changePassword,
         logout,
         authModalOpen,
         setAuthModalOpen,

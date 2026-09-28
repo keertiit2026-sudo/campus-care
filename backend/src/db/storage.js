@@ -644,6 +644,18 @@ class Database {
     return userData;
   }
 
+  updateUser(id, updates) {
+    const idx = this.data.users.findIndex(u => u.id === id);
+    if (idx === -1) return null;
+    this.data.users[idx] = {
+      ...this.data.users[idx],
+      ...updates,
+      updatedAt: new Date().toISOString()
+    };
+    this.save();
+    return this.data.users[idx];
+  }
+
   getStaffMembers(statusFilter = 'active') {
     let staff = this.data.users.filter(u => u.role === 'staff');
     if (statusFilter === 'all') {

@@ -40,6 +40,8 @@ app.get('/api/health', (req, res) => {
 app.post('/api/auth/register', authCtrl.register);
 app.post('/api/auth/login', authCtrl.login);
 app.get('/api/auth/me', authenticate, authCtrl.getMe);
+app.put('/api/auth/profile', authenticate, authCtrl.updateProfile);
+app.put('/api/auth/password', authenticate, authCtrl.changePassword);
 
 // --- Complaints Routes ---
 app.get('/api/complaints', authenticate, complaintsCtrl.getComplaints);

@@ -66,6 +66,28 @@ export const api = {
     return json;
   },
 
+  async updateProfile(data) {
+    const res = await safeFetch(`${API_BASE_URL}/auth/profile`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data)
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Failed to update profile');
+    return json;
+  },
+
+  async changePassword(currentPassword, newPassword) {
+    const res = await safeFetch(`${API_BASE_URL}/auth/password`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ currentPassword, newPassword })
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Failed to change password');
+    return json;
+  },
+
   // --- Complaints API ---
   async getComplaints(params = {}) {
     const query = new URLSearchParams(params).toString();

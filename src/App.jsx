@@ -14,6 +14,7 @@ import { DepartmentsView } from './components/admin/DepartmentsView';
 import { AnalyticsView } from './components/admin/AnalyticsView';
 import { StudentLoginPage } from './components/student/StudentLoginPage';
 import { AdminLoginPage } from './components/admin/AdminLoginPage';
+import { ProfilePage } from './components/pages/ProfilePage';
 import { IntelligenceDashboardPage } from './components/intelligence/IntelligenceDashboardPage';
 import { NotFoundPage } from './components/pages/NotFoundPage';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
@@ -90,6 +91,7 @@ const MainLayout = () => {
             {/* Authenticated Routes */}
             <Route path="/" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
             <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+            <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
             <Route path="/complaints" element={<ProtectedRoute><ComplaintList /></ProtectedRoute>} />
             <Route path="/complaints/my" element={<ProtectedRoute><ComplaintList customTitle="My Reported Complaints" onlyMyComplaints={true} /></ProtectedRoute>} />
             <Route path="/complaints/new" element={<ProtectedRoute><ComplaintSubmissionPage /></ProtectedRoute>} />

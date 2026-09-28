@@ -99,3 +99,71 @@ export const login = (req, res) => {
 export const getMe = (req, res) => {
   res.json({ user: req.user });
 };
+
+// 4. Update Profile
+export const updateProfile = (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { name, phone, department, year, hostel, avatar, designation, bio, emergencyContact } = req.body;
+
+    const updates = {};
+    if (name) updates.name = name.trim();
+    if (phone !== undefined) updates.phone = phone.trim();
+    if (department) updates.department = department.trim();
+    if (year) updates.year = year.trim();
+    if (hostel) updates.hostel = hostel.trim();
+    if (avatar) updates.avatar = avatar.trim();
+    if (designation) updates.designation = designation.trim();
+    if (bio !== undefined) updates.bio = bio.trim();
+    if (emergencyContact !== undefined) updates.emergencyContact = emergencyContact.trim();
+
+    const updated = db.updateUser(userId, updates);
+    if (!updated) {
+      return res.status(404).json({ error: 'User account not found.' });
+    }
+
+    const { passwordHash: _, ...userSafe } = updated;
+    res.json({
+      message: 'Profile updated successfully.',
+      user: userSafe
+    });
+  } catch (err) {
+    console.error('Update profile error:', err);
+    res.status(500).json({ error: 'Internal server error during profile update.' });
+  }
+};
+
+// 5. Change Password
+export const changePassword = (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { currentPassword, newPassword } = req.body;
+
+    if (!newPassword || newPassword.length < 6) {
+      return res.status(400).json({ error: 'New password must be at least 6 characters.' });
+    }
+
+    const user = db.findUserById(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User account not found.' });
+    }
+
+    if (user.passwordHash && currentPassword) {
+      const isMatch = bcrypt.compareSync(currentPassword, user.passwordHash);
+      if (!isMatch) {
+        return res.status(400).json({ error: 'Current password is incorrect.' });
+      }
+    }
+
+    const salt = bcrypt.genSaltSync(10);
+    const passwordHash = bcrypt.hashSync(newPassword, salt);
+
+    db.updateUser(userId, { passwordHash });
+
+    res.json({ message: 'Password updated successfully.' });
+  } catch (err) {
+    console.error('Change password error:', err);
+    res.status(500).json({ error: 'Internal server error during password change.' });
+  }
+};
+

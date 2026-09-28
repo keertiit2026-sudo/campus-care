@@ -15,7 +15,8 @@ import {
   LogOut,
   Bell,
   Heart,
-  Grid
+  Grid,
+  User
 } from 'lucide-react';
 
 export const Sidebar = ({ isMobileOpen, onCloseMobile }) => {
@@ -38,6 +39,7 @@ export const Sidebar = ({ isMobileOpen, onCloseMobile }) => {
       { path: '/complaints/my', label: 'My Tickets', icon: FileText, badge: (stats?.myTotal || 0) > 0 ? stats?.myTotal : null }
     ] : []),
     { path: '/departments', label: 'Departments', icon: Building, badge: null },
+    { path: '/profile', label: 'My Profile', icon: User, badge: null },
     ...(user?.role === 'admin' || user?.role === 'staff' || currentPersona?.role === 'admin' ? [
       { path: '/admin/intelligence', label: 'Intelligence AI', icon: Sparkles, badge: 'AI' },
       { path: '/analytics', label: 'Reports', icon: BarChart3, badge: null }
