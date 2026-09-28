@@ -31,6 +31,8 @@ import {
   Image,
   RefreshCw,
   X,
+  ListFilter,
+  BarChart3,
   LogOut
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
@@ -45,6 +47,12 @@ export const ProfilePage = () => {
     openModal 
   } = useApp();
 
+  // Role detection: Staff / Admin vs Student
+  const isAdmin = user?.role === 'admin' || (user?.email && user.email.toLowerCase().includes('admin'));
+  const isStaff = (user?.role === 'staff' || (user?.email && (user.email.toLowerCase().includes('staff') || user.email.toLowerCase().includes('alex') || user.email.toLowerCase().includes('devin')))) && !isAdmin;
+  const isStaffOrAdmin = isAdmin || isStaff;
+  const isStudent = !isStaffOrAdmin;
+
   const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'tickets' | 'security'
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -58,23 +66,24 @@ export const ProfilePage = () => {
   const [uploadFileName, setUploadFileName] = useState('');
 
   // Profile Form state
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    studentId: '',
-    department: '',
-    year: '',
-    hostel: '',
-    designation: '',
-    bio: '',
-    emergencyContact: '',
-    avatar: '',
-    // Campus Credentials fields
-    enrollmentStatus: 'Enrolled & Verified',
-    portalRole: 'student',
-    registeredBatch: 'Academic Year 2024–2028',
-    slaTier: 'Standard Tier (24h)'
+  const [formData, setFormData] = useState(() => {
+    return {
+      name: user?.name || (isAdmin ? 'Dean Sarah Jenkins' : isStaff ? 'Devin Thorne' : 'Priya Sharma'),
+      email: user?.email || (isAdmin ? 'admin@college.edu' : isStaff ? 'devin.thorne@college.edu' : 'priya.sharma@college.edu'),
+      phone: user?.phone || '+91 98765 43210',
+      studentId: user?.studentId || (isStaffOrAdmin ? 'EMP-2024-1042' : 'STU-2024-8841'),
+      department: user?.department || (isAdmin ? 'Campus Administration' : isStaff ? 'IT Services & Network Infrastructure' : 'Computer Science & Engineering'),
+      year: user?.year || (isStaffOrAdmin ? 'Executive Faculty' : '3rd Year (Semester 5)'),
+      hostel: user?.hostel || (isStaffOrAdmin ? 'Campus Staff Residence A-4' : 'Gargi Hall, Room 314'),
+      designation: user?.designation || user?.roleTitle || (isAdmin ? 'Dean of Campus Infrastructure & Student Welfare' : isStaff ? 'Lead Systems Specialist' : 'Undergraduate Scholar'),
+      bio: user?.bio || (isStaffOrAdmin ? 'Dedicated campus administrator ensuring safe infrastructure and timely resolution of collegiate complaints.' : 'Passionate student advocating for a cleaner, smarter, and safer campus community.'),
+      emergencyContact: user?.emergencyContact || (isStaffOrAdmin ? 'Campus Helpdesk (+91 98450 11223)' : 'Dr. M. Sharma (+91 98765 11223)'),
+      avatar: user?.avatar || (isAdmin ? 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200&auto=format&fit=crop&q=80' : isStaff ? 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80' : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80'),
+      enrollmentStatus: user?.enrollmentStatus || (isStaffOrAdmin ? 'Active Faculty / Staff' : 'Enrolled & Verified'),
+      portalRole: user?.portalRole || user?.role || (isAdmin ? 'admin' : isStaff ? 'staff' : 'student'),
+      registeredBatch: user?.registeredBatch || (isStaffOrAdmin ? 'Appointed 2024' : 'Academic Year 2024–2028'),
+      slaTier: user?.slaTier || (isStaffOrAdmin ? 'Admin Escalation Authority' : 'Standard Tier (24h)')
+    };
   });
 
   // Password Form state
@@ -93,47 +102,60 @@ export const ProfilePage = () => {
     weeklyDigest: false
   });
 
-  // Ticket Filters in Tab 2
+  // Ticket Filters in Tab 2 (Student only)
   const [ticketFilter, setTicketFilter] = useState('all'); // 'all' | 'active' | 'resolved'
   const [ticketSearch, setTicketSearch] = useState('');
 
   // Sync form data with current user
   useEffect(() => {
     if (user) {
-      const defaultAvatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(user.name || 'Priya')}`;
-      setFormData({
-        name: user.name || 'Priya Sharma',
-        email: user.email || 'priya.sharma@college.edu',
-        phone: user.phone || '+91 98765 43210',
-        studentId: user.studentId || (user.role === 'student' ? 'STU-2024-8841' : 'EMP-2024-1042'),
-        department: user.department || (user.role === 'student' ? 'Computer Science & Engineering' : 'IT Services & Network Infrastructure'),
-        year: user.year || (user.role === 'student' ? '3rd Year (Semester 5)' : 'Faculty / Staff'),
-        hostel: user.hostel || (user.role === 'student' ? 'Gargi Hall, Room 314' : 'Campus Staff Residence A-4'),
-        designation: user.designation || user.roleTitle || (user.role === 'admin' ? 'Dean of Campus Infrastructure' : user.role === 'staff' ? 'Lead Systems Specialist' : 'Undergraduate Scholar'),
-        bio: user.bio || 'Passionate student advocating for a cleaner, smarter, and safer campus community.',
-        emergencyContact: user.emergencyContact || 'Dr. M. Sharma (+91 98450 11223)',
-        avatar: user.avatar || defaultAvatar,
-        enrollmentStatus: user.enrollmentStatus || 'Enrolled & Verified',
-        portalRole: user.portalRole || user.role || 'student',
-        registeredBatch: user.registeredBatch || 'Academic Year 2024–2028',
-        slaTier: user.slaTier || 'Standard Tier (24h)'
-      });
+      const userIsAdmin = user.role === 'admin' || (user.email && user.email.toLowerCase().includes('admin'));
+      const userIsStaff = (user.role === 'staff' || (user.email && (user.email.toLowerCase().includes('staff') || user.email.toLowerCase().includes('alex') || user.email.toLowerCase().includes('devin')))) && !userIsAdmin;
+      const userIsStaffOrAdmin = userIsAdmin || userIsStaff;
+      
+      const defaultAvatar = userIsAdmin
+        ? 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200&auto=format&fit=crop&q=80'
+        : userIsStaff
+          ? 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80'
+          : `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(user.name || 'Priya')}`;
+
+      setFormData(prev => ({
+        ...prev,
+        name: user.name || (userIsAdmin ? 'Dean Sarah Jenkins' : userIsStaff ? 'Devin Thorne' : 'Priya Sharma'),
+        email: user.email || (userIsAdmin ? 'admin@college.edu' : userIsStaff ? 'devin.thorne@college.edu' : 'priya.sharma@college.edu'),
+        phone: user.phone || prev.phone || '+91 98765 43210',
+        studentId: user.studentId || (userIsStaffOrAdmin ? 'EMP-2024-1042' : 'STU-2024-8841'),
+        department: user.department || (userIsAdmin ? 'Campus Administration' : userIsStaff ? 'IT Services & Network Infrastructure' : 'Computer Science & Engineering'),
+        year: user.year || (userIsStaffOrAdmin ? 'Executive Faculty' : '3rd Year (Semester 5)'),
+        hostel: user.hostel || (userIsStaffOrAdmin ? 'Campus Staff Residence A-4' : 'Gargi Hall, Room 314'),
+        designation: user.designation || user.roleTitle || (userIsAdmin ? 'Dean of Campus Infrastructure & Student Welfare' : userIsStaff ? 'Lead Systems Specialist' : 'Undergraduate Scholar'),
+        bio: user.bio || (userIsStaffOrAdmin ? 'Dedicated campus administrator ensuring safe infrastructure and timely resolution of collegiate complaints.' : 'Passionate student advocating for a cleaner, smarter, and safer campus community.'),
+        emergencyContact: user.emergencyContact || (userIsStaffOrAdmin ? 'Campus Helpdesk (+91 98450 11223)' : 'Dr. M. Sharma (+91 98765 11223)'),
+        avatar: user.avatar || prev.avatar || defaultAvatar,
+        enrollmentStatus: user.enrollmentStatus || (userIsStaffOrAdmin ? 'Active Faculty / Staff' : 'Enrolled & Verified'),
+        portalRole: user.portalRole || user.role || (userIsAdmin ? 'admin' : userIsStaff ? 'staff' : 'student'),
+        registeredBatch: user.registeredBatch || (userIsStaffOrAdmin ? 'Appointed 2024' : 'Academic Year 2024–2028'),
+        slaTier: user.slaTier || (userIsStaffOrAdmin ? 'Admin Escalation Authority' : 'Standard Tier (24h)')
+      }));
       setPreviewAvatar(user.avatar || defaultAvatar);
     }
   }, [user]);
 
-  const isStudent = formData.portalRole === 'student' || user?.role === 'student' || !user?.role;
-  const isStaff = formData.portalRole === 'staff' || user?.role === 'staff';
-  const isAdmin = formData.portalRole === 'admin' || user?.role === 'admin';
+  // If staff/admin is on tickets tab, switch back to overview
+  useEffect(() => {
+    if (isStaffOrAdmin && activeTab === 'tickets') {
+      setActiveTab('overview');
+    }
+  }, [isStaffOrAdmin, activeTab]);
 
-  // User tickets list
+  // For Students: User's reported tickets
   const userTickets = (complaints || []).filter(item => {
     if (!item) return false;
     if (user?.id && item.student?.id && String(item.student.id) === String(user.id)) return true;
     if (user?.email && item.student?.email && item.student.email.toLowerCase() === user.email.toLowerCase()) return true;
     if (user?.studentId && item.student?.studentId && item.student.studentId.toLowerCase() === user.studentId.toLowerCase()) return true;
     if (user?.studentId && item.studentId && item.studentId.toLowerCase() === user.studentId.toLowerCase()) return true;
-    if (isStudent && item.student?.name && user?.name && item.student.name.toLowerCase().includes(user.name.toLowerCase().split(' ')[0])) return true;
+    if (item.student?.name && user?.name && item.student.name.toLowerCase().includes(user.name.toLowerCase().split(' ')[0])) return true;
     return false;
   });
 
@@ -141,7 +163,7 @@ export const ProfilePage = () => {
   const activeTickets = userTickets.filter(t => t.status !== 'Resolved' && t.status !== 'Closed');
   const resolutionRate = userTickets.length > 0 ? Math.round((resolvedTickets.length / userTickets.length) * 100) : 100;
 
-  // Filtered tickets in Tab 2
+  // Filtered tickets in Student Tab 2
   const filteredTickets = userTickets.filter(ticket => {
     const matchesSearch = !ticketSearch || 
       ticket.title?.toLowerCase().includes(ticketSearch.toLowerCase()) ||
@@ -157,11 +179,11 @@ export const ProfilePage = () => {
 
   // Diverse avatar presets
   const avatarPresets = [
-    { name: 'Priya Sharma', url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80' },
-    { name: 'Student Female 1', url: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&auto=format&fit=crop&q=80' },
-    { name: 'Student Male 1', url: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=200&auto=format&fit=crop&q=80' },
-    { name: 'Student Male 2', url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80' },
     { name: 'Dean Jenkins', url: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200&auto=format&fit=crop&q=80' },
+    { name: 'Staff Specialist', url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80' },
+    { name: 'Priya Sharma', url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80' },
+    { name: 'Student Female', url: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&auto=format&fit=crop&q=80' },
+    { name: 'Student Male', url: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=200&auto=format&fit=crop&q=80' },
     { name: 'Avatar Felix', url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix' },
     { name: 'Avatar Bella', url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Bella' },
     { name: 'Avatar Zoe', url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Zoe' },
@@ -228,7 +250,7 @@ export const ProfilePage = () => {
     }
   };
 
-  // Copy Student ID to clipboard
+  // Copy Student / Staff ID to clipboard
   const handleCopyId = () => {
     if (formData.studentId) {
       navigator.clipboard.writeText(formData.studentId);
@@ -317,17 +339,17 @@ export const ProfilePage = () => {
   const renderStatusBadge = (status) => {
     switch (status) {
       case 'Submitted':
-        return <span style={{ padding: '3px 10px', borderRadius: '9999px', fontSize: '0.72rem', fontWeight: 700, backgroundColor: 'rgba(139, 92, 246, 0.12)', color: '#8B5CF6' }}>Submitted</span>;
+        return <span style={{ padding: '3px 10px', borderRadius: '9999px', fontSize: '0.72rem', fontWeight: 700, backgroundColor: 'rgba(139, 92, 246, 0.12)', color: '#8B5CF6', whiteSpace: 'nowrap' }}>Submitted</span>;
       case 'Under Review':
-        return <span style={{ padding: '3px 10px', borderRadius: '9999px', fontSize: '0.72rem', fontWeight: 700, backgroundColor: 'rgba(245, 158, 11, 0.12)', color: '#D97706' }}>Under Review</span>;
+        return <span style={{ padding: '3px 10px', borderRadius: '9999px', fontSize: '0.72rem', fontWeight: 700, backgroundColor: 'rgba(245, 158, 11, 0.12)', color: '#D97706', whiteSpace: 'nowrap' }}>Under Review</span>;
       case 'Assigned':
-        return <span style={{ padding: '3px 10px', borderRadius: '9999px', fontSize: '0.72rem', fontWeight: 700, backgroundColor: 'rgba(14, 165, 233, 0.12)', color: '#0284C7' }}>Assigned</span>;
+        return <span style={{ padding: '3px 10px', borderRadius: '9999px', fontSize: '0.72rem', fontWeight: 700, backgroundColor: 'rgba(14, 165, 233, 0.12)', color: '#0284C7', whiteSpace: 'nowrap' }}>Assigned</span>;
       case 'In Progress':
-        return <span style={{ padding: '3px 10px', borderRadius: '9999px', fontSize: '0.72rem', fontWeight: 700, backgroundColor: 'rgba(99, 102, 241, 0.12)', color: '#6366F1' }}>In Progress</span>;
+        return <span style={{ padding: '3px 10px', borderRadius: '9999px', fontSize: '0.72rem', fontWeight: 700, backgroundColor: 'rgba(99, 102, 241, 0.12)', color: '#6366F1', whiteSpace: 'nowrap' }}>In Progress</span>;
       case 'Resolved':
-        return <span style={{ padding: '3px 10px', borderRadius: '9999px', fontSize: '0.72rem', fontWeight: 700, backgroundColor: 'rgba(16, 185, 129, 0.12)', color: '#10B981' }}>Resolved</span>;
+        return <span style={{ padding: '3px 10px', borderRadius: '9999px', fontSize: '0.72rem', fontWeight: 700, backgroundColor: 'rgba(16, 185, 129, 0.12)', color: '#10B981', whiteSpace: 'nowrap' }}>Resolved</span>;
       default:
-        return <span style={{ padding: '3px 10px', borderRadius: '9999px', fontSize: '0.72rem', fontWeight: 700, backgroundColor: 'rgba(100, 116, 139, 0.12)', color: '#64748B' }}>{status || 'Closed'}</span>;
+        return <span style={{ padding: '3px 10px', borderRadius: '9999px', fontSize: '0.72rem', fontWeight: 700, backgroundColor: 'rgba(100, 116, 139, 0.12)', color: '#64748B', whiteSpace: 'nowrap' }}>{status || 'Closed'}</span>;
     }
   };
 
@@ -336,13 +358,13 @@ export const ProfilePage = () => {
     switch (priority?.toLowerCase()) {
       case 'urgent':
       case 'critical':
-        return <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#EC4899', backgroundColor: '#FDF2F8', padding: '2px 8px', borderRadius: '6px', border: '1px solid rgba(236, 72, 153, 0.3)' }}>Critical</span>;
+        return <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#EC4899', backgroundColor: '#FDF2F8', padding: '2px 8px', borderRadius: '6px', border: '1px solid rgba(236, 72, 153, 0.3)', whiteSpace: 'nowrap' }}>Critical</span>;
       case 'high':
-        return <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#F59E0B', backgroundColor: '#FFFBEB', padding: '2px 8px', borderRadius: '6px', border: '1px solid rgba(245, 158, 11, 0.3)' }}>High</span>;
+        return <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#F59E0B', backgroundColor: '#FFFBEB', padding: '2px 8px', borderRadius: '6px', border: '1px solid rgba(245, 158, 11, 0.3)', whiteSpace: 'nowrap' }}>High</span>;
       case 'medium':
-        return <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#0EA5E9', backgroundColor: '#F0F9FF', padding: '2px 8px', borderRadius: '6px', border: '1px solid rgba(14, 165, 233, 0.3)' }}>Medium</span>;
+        return <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#0EA5E9', backgroundColor: '#F0F9FF', padding: '2px 8px', borderRadius: '6px', border: '1px solid rgba(14, 165, 233, 0.3)', whiteSpace: 'nowrap' }}>Medium</span>;
       default:
-        return <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#10B981', backgroundColor: '#ECFDF5', padding: '2px 8px', borderRadius: '6px', border: '1px solid rgba(16, 185, 129, 0.3)' }}>Low</span>;
+        return <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#10B981', backgroundColor: '#ECFDF5', padding: '2px 8px', borderRadius: '6px', border: '1px solid rgba(16, 185, 129, 0.3)', whiteSpace: 'nowrap' }}>Low</span>;
     }
   };
 
@@ -363,9 +385,13 @@ export const ProfilePage = () => {
           </button>
           <span style={{ color: 'var(--text-muted)' }}>/</span>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#EC4899' }}>Student Portal</span>
+            <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#EC4899' }}>
+              {isAdmin ? 'Admin Portal' : isStaff ? 'Staff Portal' : 'Student Portal'}
+            </span>
             <span style={{ color: 'var(--text-muted)' }}>/</span>
-            <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#1E1B4B' }}>My Profile</span>
+            <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#1E1B4B' }}>
+              {isAdmin ? 'Administrator Profile' : isStaff ? 'Staff Profile' : 'My Profile'}
+            </span>
           </div>
         </div>
 
@@ -403,7 +429,8 @@ export const ProfilePage = () => {
                 <Edit3 size={15} />
                 <span>Edit Profile</span>
               </button>
-              {isStudent && (
+
+              {isStudent ? (
                 <button
                   type="button"
                   onClick={() => openModal('submit')}
@@ -412,6 +439,16 @@ export const ProfilePage = () => {
                 >
                   <PlusCircle size={15} />
                   <span>New Complaint</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => navigate('/departments')}
+                  className="btn btn-primary"
+                  style={{ fontSize: '0.825rem', gap: '6px' }}
+                >
+                  <Building size={15} />
+                  <span>Staff Directory</span>
                 </button>
               )}
             </>
@@ -589,7 +626,7 @@ export const ProfilePage = () => {
         </div>
       </div>
 
-      {/* 3. Stat Cards Row */}
+      {/* 3. Stat Cards Row (Role-Adaptive) */}
       <div
         style={{
           display: 'grid',
@@ -597,7 +634,7 @@ export const ProfilePage = () => {
           gap: '16px'
         }}
       >
-        {/* Total Filed */}
+        {/* Card 1: Total Complaints / Tracked */}
         <div
           style={{
             backgroundColor: '#ffffff',
@@ -612,13 +649,13 @@ export const ProfilePage = () => {
         >
           <div>
             <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-              My Complaints
+              {isStudent ? 'My Complaints' : 'Campus Complaints'}
             </div>
             <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#1E1B4B', marginTop: '2px' }}>
-              {userTickets.length}
+              {isStudent ? userTickets.length : (complaints?.length || 0)}
             </div>
             <div style={{ fontSize: '0.75rem', color: '#EC4899', fontWeight: 600, marginTop: '2px' }}>
-              Total lodged tickets
+              {isStudent ? 'Total lodged tickets' : 'Active campus complaint load'}
             </div>
           </div>
           <div style={{ width: '48px', height: '48px', borderRadius: '14px', backgroundColor: 'rgba(236, 72, 153, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#EC4899' }}>
@@ -626,7 +663,7 @@ export const ProfilePage = () => {
           </div>
         </div>
 
-        {/* Active / In-Progress */}
+        {/* Card 2: Active / In-Progress */}
         <div
           style={{
             backgroundColor: '#ffffff',
@@ -641,13 +678,13 @@ export const ProfilePage = () => {
         >
           <div>
             <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-              Under Resolution
+              {isStudent ? 'Under Resolution' : 'In Progress / Assigned'}
             </div>
             <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#F59E0B', marginTop: '2px' }}>
-              {activeTickets.length}
+              {isStudent ? activeTickets.length : (complaints || []).filter(c => c.status !== 'Resolved' && c.status !== 'Closed').length}
             </div>
             <div style={{ fontSize: '0.75rem', color: '#D97706', fontWeight: 600, marginTop: '2px' }}>
-              Assigned & In Progress
+              {isStudent ? 'Assigned & In Progress' : 'Requiring department action'}
             </div>
           </div>
           <div style={{ width: '48px', height: '48px', borderRadius: '14px', backgroundColor: 'rgba(245, 158, 11, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#F59E0B' }}>
@@ -655,7 +692,7 @@ export const ProfilePage = () => {
           </div>
         </div>
 
-        {/* Successfully Resolved */}
+        {/* Card 3: Resolved Issues */}
         <div
           style={{
             backgroundColor: '#ffffff',
@@ -670,13 +707,13 @@ export const ProfilePage = () => {
         >
           <div>
             <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-              Resolved Issues
+              {isStudent ? 'Resolved Issues' : 'Resolution Rate'}
             </div>
             <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#10B981', marginTop: '2px' }}>
-              {resolvedTickets.length}
+              {isStudent ? resolvedTickets.length : `${(complaints || []).length > 0 ? Math.round(((complaints || []).filter(c => c.status === 'Resolved' || c.status === 'Closed').length / (complaints || []).length) * 100) : 100}%`}
             </div>
             <div style={{ fontSize: '0.75rem', color: '#10B981', fontWeight: 600, marginTop: '2px' }}>
-              {resolutionRate}% Resolution Rate
+              {isStudent ? `${resolutionRate}% Resolution Rate` : `${(complaints || []).filter(c => c.status === 'Resolved' || c.status === 'Closed').length} resolved cases`}
             </div>
           </div>
           <div style={{ width: '48px', height: '48px', borderRadius: '14px', backgroundColor: 'rgba(16, 185, 129, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10B981' }}>
@@ -684,7 +721,7 @@ export const ProfilePage = () => {
           </div>
         </div>
 
-        {/* Academic Status */}
+        {/* Card 4: Academic / Staff Standing */}
         <div
           style={{
             backgroundColor: '#ffffff',
@@ -699,17 +736,17 @@ export const ProfilePage = () => {
         >
           <div>
             <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-              Academic Standing
+              {isStudent ? 'Academic Standing' : 'Department & Division'}
             </div>
-            <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#1E1B4B', marginTop: '6px' }}>
-              {formData.year}
+            <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#1E1B4B', marginTop: '6px' }}>
+              {isStudent ? formData.year : formData.department}
             </div>
             <div style={{ fontSize: '0.75rem', color: '#6366F1', fontWeight: 600, marginTop: '4px' }}>
-              {formData.hostel}
+              {isStudent ? formData.hostel : (formData.hostel || 'Main Administrative Complex')}
             </div>
           </div>
           <div style={{ width: '48px', height: '48px', borderRadius: '14px', backgroundColor: 'rgba(99, 102, 241, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6366F1' }}>
-            <GraduationCap size={24} />
+            {isStudent ? <GraduationCap size={24} /> : <Building size={24} />}
           </div>
         </div>
       </div>
@@ -744,43 +781,46 @@ export const ProfilePage = () => {
           }}
         >
           <User size={16} />
-          <span>Profile & Academic Details</span>
+          <span>{isStudent ? 'Profile & Academic Details' : 'Staff Profile & Records'}</span>
         </button>
 
-        <button
-          type="button"
-          onClick={() => setActiveTab('tickets')}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '10px 18px',
-            border: 'none',
-            background: 'none',
-            fontSize: '0.9rem',
-            fontWeight: activeTab === 'tickets' ? 800 : 600,
-            color: activeTab === 'tickets' ? '#EC4899' : 'var(--text-secondary)',
-            borderBottom: activeTab === 'tickets' ? '3px solid #EC4899' : '3px solid transparent',
-            cursor: 'pointer',
-            transition: 'all 0.2s ease',
-            borderRadius: '8px 8px 0 0'
-          }}
-        >
-          <FileText size={16} />
-          <span>My Tickets & History</span>
-          <span
+        {/* Tab 2: ONLY for Students (Staff / Admin profile does not have personal ticket history) */}
+        {isStudent && (
+          <button
+            type="button"
+            onClick={() => setActiveTab('tickets')}
             style={{
-              padding: '2px 8px',
-              borderRadius: '9999px',
-              fontSize: '0.72rem',
-              fontWeight: 800,
-              backgroundColor: activeTab === 'tickets' ? '#EC4899' : 'rgba(236, 72, 153, 0.1)',
-              color: activeTab === 'tickets' ? '#ffffff' : '#EC4899'
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '10px 18px',
+              border: 'none',
+              background: 'none',
+              fontSize: '0.9rem',
+              fontWeight: activeTab === 'tickets' ? 800 : 600,
+              color: activeTab === 'tickets' ? '#EC4899' : 'var(--text-secondary)',
+              borderBottom: activeTab === 'tickets' ? '3px solid #EC4899' : '3px solid transparent',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              borderRadius: '8px 8px 0 0'
             }}
           >
-            {userTickets.length}
-          </span>
-        </button>
+            <FileText size={16} />
+            <span>My Ticket History</span>
+            <span
+              style={{
+                padding: '2px 8px',
+                borderRadius: '9999px',
+                fontSize: '0.72rem',
+                fontWeight: 800,
+                backgroundColor: activeTab === 'tickets' ? '#EC4899' : 'rgba(236, 72, 153, 0.1)',
+                color: activeTab === 'tickets' ? '#ffffff' : '#EC4899'
+              }}
+            >
+              {userTickets.length}
+            </span>
+          </button>
+        )}
 
         <button
           type="button"
@@ -808,7 +848,7 @@ export const ProfilePage = () => {
 
       {/* 5. Tab Content Sections */}
 
-      {/* --- TAB 1: Profile & Academic Details --- */}
+      {/* --- TAB 1: Profile & Details --- */}
       {activeTab === 'overview' && (
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 1fr)', gap: '24px', alignItems: 'start' }}>
           
@@ -867,7 +907,7 @@ export const ProfilePage = () => {
 
                 {/* Student / Employee ID */}
                 <div>
-                  <label className="input-label">Student / Employee ID</label>
+                  <label className="input-label">{isStudent ? 'Student Registration ID' : 'Employee ID'}</label>
                   <input
                     type="text"
                     className="input-control"
@@ -899,14 +939,16 @@ export const ProfilePage = () => {
                       value={formData.department}
                       onChange={(e) => setFormData({ ...formData, department: e.target.value })}
                     >
+                      <option value="Campus Administration">Campus Administration</option>
+                      <option value="IT Services & Network Infrastructure">IT Services & Network Infrastructure</option>
+                      <option value="Electrical & Power Systems">Electrical & Power Systems</option>
+                      <option value="Civil Works & Estate Maintenance">Civil Works & Estate Maintenance</option>
+                      <option value="Hostel & Residential Life">Hostel & Residential Life</option>
+                      <option value="Sanitation & Housekeeping Services">Sanitation & Housekeeping Services</option>
                       <option value="Computer Science & Engineering">Computer Science & Engineering</option>
                       <option value="Information Technology">Information Technology</option>
-                      <option value="Electrical & Electronics Engineering">Electrical & Electronics Engineering</option>
                       <option value="Mechanical Engineering">Mechanical Engineering</option>
-                      <option value="Civil & Environmental Engineering">Civil & Environmental Engineering</option>
-                      <option value="Management Studies & MBA">Management Studies & MBA</option>
-                      <option value="Design & Architecture">Design & Architecture</option>
-                      <option value="Campus Administration">Campus Administration</option>
+                      <option value="Central Library Management">Central Library Management</option>
                     </select>
                   ) : (
                     <input
@@ -918,9 +960,9 @@ export const ProfilePage = () => {
                   )}
                 </div>
 
-                {/* Academic Year / Designation */}
+                {/* Designation / Academic Year */}
                 <div>
-                  <label className="input-label">{isStudent ? 'Academic Year & Semester' : 'Designation / Title'}</label>
+                  <label className="input-label">{isStudent ? 'Academic Year & Semester' : 'Designation / Official Title'}</label>
                   {isEditing && isStudent ? (
                     <select
                       className="input-control"
@@ -945,13 +987,13 @@ export const ProfilePage = () => {
                   )}
                 </div>
 
-                {/* Hostel / Residence */}
+                {/* Hostel / Residence / Office */}
                 <div>
-                  <label className="input-label">{isStudent ? 'Hostel / Campus Accommodation' : 'Office Location'}</label>
+                  <label className="input-label">{isStudent ? 'Hostel / Campus Accommodation' : 'Office / Residence Location'}</label>
                   <input
                     type="text"
                     className="input-control"
-                    placeholder="e.g. Gargi Hall, Room 314 or Day Scholar"
+                    placeholder="e.g. Gargi Hall, Room 314 or Staff Residence A-4"
                     value={formData.hostel}
                     disabled={!isEditing}
                     onChange={(e) => setFormData({ ...formData, hostel: e.target.value })}
@@ -964,7 +1006,7 @@ export const ProfilePage = () => {
                   <input
                     type="text"
                     className="input-control"
-                    placeholder="e.g. Guardian Name & Phone"
+                    placeholder="e.g. Guardian / Department Contact"
                     value={formData.emergencyContact}
                     disabled={!isEditing}
                     onChange={(e) => setFormData({ ...formData, emergencyContact: e.target.value })}
@@ -975,11 +1017,11 @@ export const ProfilePage = () => {
 
               {/* Bio / Campus Notes */}
               <div>
-                <label className="input-label">Bio / Campus Interests</label>
+                <label className="input-label">Bio / Profile Summary</label>
                 <textarea
                   className="input-control"
                   rows={3}
-                  placeholder="Share a short bio or notes about your campus involvement..."
+                  placeholder="Share a short bio or notes..."
                   value={formData.bio}
                   disabled={!isEditing}
                   onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
@@ -1044,9 +1086,9 @@ export const ProfilePage = () => {
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '0.825rem' }}>
                 
-                {/* 1. Enrollment Status */}
+                {/* 1. Enrollment / Duty Status */}
                 <div style={{ paddingBottom: '8px', borderBottom: '1px solid rgba(249, 168, 212, 0.4)' }}>
-                  <span style={{ color: 'var(--text-secondary)', display: 'block', marginBottom: '4px', fontSize: '0.75rem', fontWeight: 600 }}>Enrollment Status:</span>
+                  <span style={{ color: 'var(--text-secondary)', display: 'block', marginBottom: '4px', fontSize: '0.75rem', fontWeight: 600 }}>Status:</span>
                   {isEditing ? (
                     <select
                       className="input-control"
@@ -1055,6 +1097,7 @@ export const ProfilePage = () => {
                       style={{ padding: '4px 8px', fontSize: '0.8rem' }}
                     >
                       <option value="Enrolled & Verified">Enrolled & Verified</option>
+                      <option value="Active Faculty / Staff">Active Faculty / Staff</option>
                       <option value="Active Student">Active Student</option>
                       <option value="Dean's Honor Scholar">Dean's Honor Scholar</option>
                       <option value="Research Fellow">Research Fellow</option>
@@ -1087,12 +1130,12 @@ export const ProfilePage = () => {
 
                 {/* 3. Registered Batch / Year Range */}
                 <div style={{ paddingBottom: '8px', borderBottom: '1px solid rgba(249, 168, 212, 0.4)' }}>
-                  <span style={{ color: 'var(--text-secondary)', display: 'block', marginBottom: '4px', fontSize: '0.75rem', fontWeight: 600 }}>Registered Batch / Period:</span>
+                  <span style={{ color: 'var(--text-secondary)', display: 'block', marginBottom: '4px', fontSize: '0.75rem', fontWeight: 600 }}>Registered Period / Batch:</span>
                   {isEditing ? (
                     <input
                       type="text"
                       className="input-control"
-                      placeholder="e.g. Academic Year 2024–2028"
+                      placeholder="e.g. Academic Year 2024–2028 or Appointed 2024"
                       value={formData.registeredBatch}
                       onChange={(e) => setFormData({ ...formData, registeredBatch: e.target.value })}
                       style={{ padding: '4px 8px', fontSize: '0.8rem' }}
@@ -1116,6 +1159,7 @@ export const ProfilePage = () => {
                       <option value="Priority Tier (12h)">Priority Tier (12h)</option>
                       <option value="Urgent Tier (6h)">Urgent Tier (6h)</option>
                       <option value="VIP Student Welfare">VIP Student Welfare</option>
+                      <option value="Admin Escalation Authority">Admin Escalation Authority</option>
                     </select>
                   ) : (
                     <span style={{ fontWeight: 700, color: '#8B5CF6' }}>{formData.slaTier}</span>
@@ -1125,39 +1169,82 @@ export const ProfilePage = () => {
               </div>
             </div>
 
-            {/* Quick Actions Card */}
+            {/* Quick Actions Card (Role-Specific: Staff/Admin vs Student) */}
             <div className="glass-panel" style={{ padding: '20px', borderRadius: '20px' }}>
               <h4 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#1E1B4B', margin: '0 0 12px 0' }}>
                 Quick Shortcuts
               </h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <button
-                  type="button"
-                  onClick={() => openModal('submit')}
-                  className="btn btn-secondary btn-sm"
-                  style={{ justifyContent: 'flex-start', width: '100%', gap: '8px' }}
-                >
-                  <PlusCircle size={15} color="#EC4899" />
-                  <span>File a Campus Complaint</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => navigate('/complaints/my')}
-                  className="btn btn-secondary btn-sm"
-                  style={{ justifyContent: 'flex-start', width: '100%', gap: '8px' }}
-                >
-                  <FileText size={15} color="#EC4899" />
-                  <span>View My Ticket Queue</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => navigate('/departments')}
-                  className="btn btn-secondary btn-sm"
-                  style={{ justifyContent: 'flex-start', width: '100%', gap: '8px' }}
-                >
-                  <Building size={15} color="#EC4899" />
-                  <span>Campus Departments Directory</span>
-                </button>
+                {isStudent ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => openModal('submit')}
+                      className="btn btn-secondary btn-sm"
+                      style={{ justifyContent: 'flex-start', width: '100%', gap: '8px' }}
+                    >
+                      <PlusCircle size={15} color="#EC4899" />
+                      <span>File a Campus Complaint</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => navigate('/complaints/my')}
+                      className="btn btn-secondary btn-sm"
+                      style={{ justifyContent: 'flex-start', width: '100%', gap: '8px' }}
+                    >
+                      <FileText size={15} color="#EC4899" />
+                      <span>View My Ticket Queue</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => navigate('/departments')}
+                      className="btn btn-secondary btn-sm"
+                      style={{ justifyContent: 'flex-start', width: '100%', gap: '8px' }}
+                    >
+                      <Building size={15} color="#EC4899" />
+                      <span>Campus Departments Directory</span>
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => navigate('/complaints')}
+                      className="btn btn-secondary btn-sm"
+                      style={{ justifyContent: 'flex-start', width: '100%', gap: '8px' }}
+                    >
+                      <ListFilter size={15} color="#EC4899" />
+                      <span>View All Campus Complaints</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => navigate('/departments')}
+                      className="btn btn-secondary btn-sm"
+                      style={{ justifyContent: 'flex-start', width: '100%', gap: '8px' }}
+                    >
+                      <Building size={15} color="#EC4899" />
+                      <span>Campus Departments Directory</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => navigate('/admin/intelligence')}
+                      className="btn btn-secondary btn-sm"
+                      style={{ justifyContent: 'flex-start', width: '100%', gap: '8px' }}
+                    >
+                      <Sparkles size={15} color="#EC4899" />
+                      <span>Intelligence AI Dashboard</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => navigate('/analytics')}
+                      className="btn btn-secondary btn-sm"
+                      style={{ justifyContent: 'flex-start', width: '100%', gap: '8px' }}
+                    >
+                      <BarChart3 size={15} color="#EC4899" />
+                      <span>Analytics & SLA Reports</span>
+                    </button>
+                  </>
+                )}
               </div>
             </div>
 
@@ -1165,8 +1252,8 @@ export const ProfilePage = () => {
         </div>
       )}
 
-      {/* --- TAB 2: My Tickets & Complaint History --- */}
-      {activeTab === 'tickets' && (
+      {/* --- TAB 2: Complaints / Tickets Queue (Students Only) --- */}
+      {isStudent && activeTab === 'tickets' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           
           {/* Controls Bar */}
@@ -1198,7 +1285,7 @@ export const ProfilePage = () => {
                   cursor: 'pointer'
                 }}
               >
-                All Tickets ({userTickets.length})
+                All Complaints ({userTickets.length})
               </button>
               <button
                 type="button"
@@ -1214,7 +1301,7 @@ export const ProfilePage = () => {
                   cursor: 'pointer'
                 }}
               >
-                Active ({activeTickets.length})
+                In Progress ({activeTickets.length})
               </button>
               <button
                 type="button"
@@ -1335,19 +1422,17 @@ export const ProfilePage = () => {
                 No Complaints Found
               </h3>
               <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', maxWidth: '400px', margin: '0 auto 20px auto' }}>
-                {ticketSearch ? `No complaints matching "${ticketSearch}".` : "You haven't filed any complaints matching this filter yet."}
+                {ticketSearch ? `No complaints matching "${ticketSearch}".` : "No complaints lodged in your student record right now."}
               </p>
-              {isStudent && (
-                <button
-                  type="button"
-                  onClick={() => openModal('submit')}
-                  className="btn btn-primary"
-                  style={{ gap: '6px' }}
-                >
-                  <PlusCircle size={15} />
-                  <span>Raise a Campus Complaint</span>
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={() => openModal('submit')}
+                className="btn btn-primary"
+                style={{ gap: '6px' }}
+              >
+                <PlusCircle size={15} />
+                <span>Raise a Campus Complaint</span>
+              </button>
             </div>
           )}
 
@@ -1459,7 +1544,7 @@ export const ProfilePage = () => {
                 <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
                   <div>
                     <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1E1B4B' }}>Email Ticket Updates</div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Receive emails when your complaint status changes</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Receive emails when complaint status changes</div>
                   </div>
                   <input
                     type="checkbox"
