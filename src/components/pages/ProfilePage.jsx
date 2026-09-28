@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useApp } from '../../context/AppContext';
@@ -26,20 +26,21 @@ import {
   Lock,
   Copy,
   ExternalLink,
-  HelpCircle,
   PlusCircle,
-  Sliders,
+  Upload,
+  Image,
+  RefreshCw,
+  X,
   LogOut
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 export const ProfilePage = () => {
   const navigate = useNavigate();
+  const fileInputRef = useRef(null);
   const { user, updateProfile, changePassword, logout } = useAuth();
   const { 
-    studentComplaints = [], 
     complaints = [], 
-    stats, 
     addToast, 
     openModal 
   } = useApp();
@@ -51,9 +52,12 @@ export const ProfilePage = () => {
 
   // Avatar Picker Modal state
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
+  const [avatarTab, setAvatarTab] = useState('upload'); // 'upload' | 'presets' | 'url'
+  const [previewAvatar, setPreviewAvatar] = useState(null);
   const [customAvatarUrl, setCustomAvatarUrl] = useState('');
+  const [uploadFileName, setUploadFileName] = useState('');
 
-  // Profile Form state initialized from user context
+  // Profile Form state
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -91,6 +95,7 @@ export const ProfilePage = () => {
   // Sync form data with current user
   useEffect(() => {
     if (user) {
+      const defaultAvatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(user.name || 'Priya')}`;
       setFormData({
         name: user.name || 'Priya Sharma',
         email: user.email || 'priya.sharma@college.edu',
@@ -102,12 +107,12 @@ export const ProfilePage = () => {
         designation: user.designation || user.roleTitle || (user.role === 'admin' ? 'Dean of Campus Infrastructure' : user.role === 'staff' ? 'Lead Systems Specialist' : 'Undergraduate Scholar'),
         bio: user.bio || 'Passionate student advocating for a cleaner, smarter, and safer campus community.',
         emergencyContact: user.emergencyContact || 'Dr. M. Sharma (+91 98450 11223)',
-        avatar: user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(user.name || 'Priya')}`
+        avatar: user.avatar || defaultAvatar
       });
+      setPreviewAvatar(user.avatar || defaultAvatar);
     }
   }, [user]);
 
-  // Derived role badge styling
   const isStudent = user?.role === 'student' || !user?.role;
   const isStaff = user?.role === 'staff';
   const isAdmin = user?.role === 'admin';
@@ -119,7 +124,6 @@ export const ProfilePage = () => {
     if (user?.email && item.student?.email && item.student.email.toLowerCase() === user.email.toLowerCase()) return true;
     if (user?.studentId && item.student?.studentId && item.student.studentId.toLowerCase() === user.studentId.toLowerCase()) return true;
     if (user?.studentId && item.studentId && item.studentId.toLowerCase() === user.studentId.toLowerCase()) return true;
-    // Fallback if demo persona matches
     if (isStudent && item.student?.name && user?.name && item.student.name.toLowerCase().includes(user.name.toLowerCase().split(' ')[0])) return true;
     return false;
   });
@@ -137,23 +141,84 @@ export const ProfilePage = () => {
       ticket.location?.toLowerCase().includes(ticketSearch.toLowerCase());
 
     if (!matchesSearch) return false;
-
     if (ticketFilter === 'active') return ticket.status !== 'Resolved' && ticket.status !== 'Closed';
     if (ticketFilter === 'resolved') return ticket.status === 'Resolved' || ticket.status === 'Closed';
     return true;
   });
 
-  // Avatar presets
+  // Diverse avatar presets
   const avatarPresets = [
-    { name: 'Priya Sharma', url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80' },
-    { name: 'Student Female 1', url: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80' },
-    { name: 'Student Male 1', url: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80' },
-    { name: 'Student Male 2', url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80' },
-    { name: 'Dean Jenkins', url: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80' },
-    { name: 'Avatar Sparkle', url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix' },
+    { name: 'Priya Sharma', url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80' },
+    { name: 'Student Female 1', url: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&auto=format&fit=crop&q=80' },
+    { name: 'Student Male 1', url: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=200&auto=format&fit=crop&q=80' },
+    { name: 'Student Male 2', url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80' },
+    { name: 'Dean Jenkins', url: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200&auto=format&fit=crop&q=80' },
+    { name: 'Avatar Felix', url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix' },
     { name: 'Avatar Bella', url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Bella' },
-    { name: 'Avatar Zoe', url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Zoe' }
+    { name: 'Avatar Zoe', url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Zoe' },
+    { name: 'Avatar Alex', url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alex' },
+    { name: 'Avatar Luna', url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Luna' },
+    { name: 'Avatar Leo', url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Leo' },
+    { name: 'Avatar Maya', url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Maya' }
   ];
+
+  // Handle local file upload from Gallery / Computer folders
+  const handleFileUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      addToast({
+        type: 'error',
+        title: 'Invalid File',
+        message: 'Please select a valid image file (JPG, PNG, WEBP).'
+      });
+      return;
+    }
+
+    // 5MB limit check
+    if (file.size > 5 * 1024 * 1024) {
+      addToast({
+        type: 'error',
+        title: 'File Too Large',
+        message: 'Please select an image smaller than 5MB.'
+      });
+      return;
+    }
+
+    setUploadFileName(file.name);
+    const reader = new FileReader();
+    reader.onload = (loadEvent) => {
+      const dataUrl = loadEvent.target?.result;
+      if (dataUrl) {
+        setPreviewAvatar(dataUrl);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Save selected avatar
+  const handleApplyAvatar = async (avatarUrlToApply) => {
+    const targetUrl = avatarUrlToApply || previewAvatar;
+    if (!targetUrl) return;
+
+    setFormData(prev => ({ ...prev, avatar: targetUrl }));
+    try {
+      await updateProfile({ avatar: targetUrl });
+      addToast({
+        type: 'success',
+        title: 'Profile Photo Updated ✨',
+        message: 'Your new avatar has been saved.'
+      });
+      setShowAvatarPicker(false);
+    } catch (err) {
+      addToast({
+        type: 'error',
+        title: 'Update Failed',
+        message: err.message || 'Could not update profile photo.'
+      });
+    }
+  };
 
   // Copy Student ID to clipboard
   const handleCopyId = () => {
@@ -272,7 +337,7 @@ export const ProfilePage = () => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', maxWidth: '1200px', margin: '0 auto', width: '100%', paddingBottom: '40px' }}>
       
-      {/* 1. Breadcrumb & Page Header */}
+      {/* 1. Breadcrumb & Page Header Actions */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <button
@@ -342,7 +407,7 @@ export const ProfilePage = () => {
         </div>
       </div>
 
-      {/* 2. Hero Persona Card */}
+      {/* 2. Hero Persona Card (Clean layout with NO overlapping) */}
       <div
         className="glass-panel"
         style={{
@@ -351,46 +416,49 @@ export const ProfilePage = () => {
           padding: '0',
           borderRadius: '24px',
           border: '1.5px solid rgba(249, 168, 212, 0.6)',
-          boxShadow: '0 12px 35px rgba(236, 72, 153, 0.08)'
+          boxShadow: '0 12px 35px rgba(236, 72, 153, 0.08)',
+          backgroundColor: '#ffffff'
         }}
       >
-        {/* Banner Glow Top Strip */}
+        {/* Top Decorative Header Strip */}
         <div
           style={{
-            height: '110px',
-            background: 'linear-gradient(135deg, #EC4899 0%, #F472B6 40%, #A855F7 100%)',
-            position: 'relative',
+            height: '115px',
+            background: 'linear-gradient(135deg, #EC4899 0%, #F472B6 50%, #A855F7 100%)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'flex-end',
-            padding: '0 24px'
+            padding: '0 24px',
+            position: 'relative'
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255, 255, 255, 0.2)', backdropFilter: 'blur(8px)', padding: '6px 14px', borderRadius: '9999px', color: '#ffffff', fontSize: '0.78rem', fontWeight: 700 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255, 255, 255, 0.22)', backdropFilter: 'blur(10px)', padding: '6px 14px', borderRadius: '9999px', color: '#ffffff', fontSize: '0.78rem', fontWeight: 700 }}>
             <Sparkles size={14} />
             <span>CampusCare Verified Account</span>
           </div>
         </div>
 
-        {/* Profile Info Main Row */}
-        <div style={{ padding: '0 28px 24px 28px', marginTop: '-45px' }}>
-          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: '20px' }}>
+        {/* Content Box Below Banner */}
+        <div style={{ padding: '0 28px 24px 28px', backgroundColor: '#ffffff' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '20px' }}>
             
-            {/* Avatar & Identifiers */}
-            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '20px', flexWrap: 'wrap' }}>
-              {/* Avatar with edit overlay */}
-              <div style={{ position: 'relative' }}>
+            {/* Left: Avatar + Details in clear hierarchy */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '22px', flexWrap: 'wrap' }}>
+              
+              {/* Avatar Box (Only Avatar overlaps top banner cleanly) */}
+              <div style={{ position: 'relative', marginTop: '-48px', flexShrink: 0 }}>
                 <img
                   src={formData.avatar}
                   alt={formData.name}
                   style={{
-                    width: '96px',
-                    height: '96px',
-                    borderRadius: '24px',
+                    width: '102px',
+                    height: '102px',
+                    borderRadius: '26px',
                     objectFit: 'cover',
                     border: '4px solid #ffffff',
-                    boxShadow: '0 8px 24px rgba(236, 72, 153, 0.25)',
-                    backgroundColor: '#ffffff'
+                    boxShadow: '0 10px 28px rgba(236, 72, 153, 0.28)',
+                    backgroundColor: '#ffffff',
+                    display: 'block'
                   }}
                   onError={(e) => {
                     e.target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(formData.name)}`;
@@ -398,13 +466,16 @@ export const ProfilePage = () => {
                 />
                 <button
                   type="button"
-                  onClick={() => setShowAvatarPicker(true)}
+                  onClick={() => {
+                    setPreviewAvatar(formData.avatar);
+                    setShowAvatarPicker(true);
+                  }}
                   style={{
                     position: 'absolute',
                     bottom: '-4px',
                     right: '-4px',
-                    width: '32px',
-                    height: '32px',
+                    width: '34px',
+                    height: '34px',
                     borderRadius: '50%',
                     backgroundColor: '#EC4899',
                     color: '#ffffff',
@@ -413,18 +484,19 @@ export const ProfilePage = () => {
                     alignItems: 'center',
                     justifyContent: 'center',
                     cursor: 'pointer',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+                    boxShadow: '0 4px 10px rgba(0,0,0,0.18)',
+                    transition: 'transform 0.2s'
                   }}
-                  title="Change profile avatar"
+                  title="Upload or change profile picture"
                 >
-                  <Camera size={14} />
+                  <Camera size={15} />
                 </button>
               </div>
 
-              {/* Name, Role & ID */}
-              <div style={{ marginBottom: '6px' }}>
+              {/* Name & Metadata (Completely in the white section with generous top padding) */}
+              <div style={{ paddingTop: '14px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                  <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#1E1B4B', margin: 0 }}>
+                  <h1 style={{ fontSize: '1.65rem', fontWeight: 800, color: '#1E1B4B', margin: 0, lineHeight: 1.2 }}>
                     {formData.name}
                   </h1>
                   <span
@@ -437,7 +509,7 @@ export const ProfilePage = () => {
                       letterSpacing: '0.04em',
                       backgroundColor: isAdmin ? '#8B5CF6' : isStaff ? '#0284C7' : '#EC4899',
                       color: '#ffffff',
-                      boxShadow: '0 2px 8px rgba(236, 72, 153, 0.3)'
+                      boxShadow: '0 2px 8px rgba(236, 72, 153, 0.25)'
                     }}
                   >
                     {isAdmin ? 'Campus Admin' : isStaff ? 'Staff Officer' : 'Student'}
@@ -448,7 +520,7 @@ export const ProfilePage = () => {
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginTop: '6px', flexWrap: 'wrap', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginTop: '8px', flexWrap: 'wrap', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <Mail size={14} color="#EC4899" />
                     <span>{formData.email}</span>
@@ -474,7 +546,7 @@ export const ProfilePage = () => {
                         fontSize: '0.78rem',
                         fontWeight: 700
                       }}
-                      title="Click to copy Student ID"
+                      title="Click to copy ID"
                     >
                       <span>ID: {formData.studentId}</span>
                       {copiedId ? <Check size={12} color="#10B981" /> : <Copy size={12} />}
@@ -482,10 +554,11 @@ export const ProfilePage = () => {
                   )}
                 </div>
               </div>
+
             </div>
 
-            {/* Quick Logout button */}
-            <div style={{ marginBottom: '6px' }}>
+            {/* Right: Sign out button */}
+            <div style={{ paddingTop: '14px' }}>
               <button
                 type="button"
                 onClick={() => {
@@ -493,7 +566,7 @@ export const ProfilePage = () => {
                   navigate('/student/login');
                 }}
                 className="btn btn-ghost"
-                style={{ color: '#EF4444', fontSize: '0.8rem', gap: '6px', border: '1px solid rgba(239, 68, 68, 0.2)' }}
+                style={{ color: '#EF4444', fontSize: '0.825rem', gap: '6px', border: '1px solid rgba(239, 68, 68, 0.25)', borderRadius: '12px', padding: '8px 14px' }}
               >
                 <LogOut size={14} />
                 <span>Sign Out</span>
@@ -727,7 +800,7 @@ export const ProfilePage = () => {
       {activeTab === 'overview' && (
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 1fr)', gap: '24px', alignItems: 'start' }}>
           
-          {/* Main Information Card */}
+          {/* Main Information Form Card */}
           <div className="glass-panel" style={{ padding: '24px', borderRadius: '20px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
               <div>
@@ -1352,14 +1425,14 @@ export const ProfilePage = () => {
         </div>
       )}
 
-      {/* --- AVATAR PICKER MODAL --- */}
+      {/* --- AVATAR & PHOTO UPLOAD MODAL --- */}
       {showAvatarPicker && (
         <div
           style={{
             position: 'fixed',
             inset: 0,
-            backgroundColor: 'rgba(30, 27, 75, 0.4)',
-            backdropFilter: 'blur(4px)',
+            backgroundColor: 'rgba(30, 27, 75, 0.45)',
+            backdropFilter: 'blur(6px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -1372,95 +1445,291 @@ export const ProfilePage = () => {
             className="glass-panel"
             style={{
               width: '100%',
-              maxWidth: '480px',
+              maxWidth: '540px',
               padding: '24px',
               borderRadius: '24px',
-              backgroundColor: '#ffffff'
+              backgroundColor: '#ffffff',
+              boxShadow: '0 20px 50px rgba(0,0,0,0.2)',
+              position: 'relative',
+              maxHeight: '90vh',
+              overflowY: 'auto'
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#1E1B4B', marginBottom: '6px' }}>
-              Choose Profile Avatar
-            </h3>
-            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>
-              Select a preset avatar or paste a custom image URL.
-            </p>
-
-            {/* Presets Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '20px' }}>
-              {avatarPresets.map((preset, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => {
-                    setFormData({ ...formData, avatar: preset.url });
-                    updateProfile({ avatar: preset.url });
-                    setShowAvatarPicker(false);
-                    addToast({ type: 'success', title: 'Avatar Updated', message: 'New profile photo set.' });
-                  }}
-                  style={{
-                    border: formData.avatar === preset.url ? '3px solid #EC4899' : '2px solid rgba(249, 168, 212, 0.4)',
-                    borderRadius: '16px',
-                    padding: '4px',
-                    backgroundColor: '#ffffff',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '4px',
-                    transition: 'all 0.2s ease'
-                  }}
-                >
-                  <img
-                    src={preset.url}
-                    alt={preset.name}
-                    style={{ width: '56px', height: '56px', borderRadius: '12px', objectFit: 'cover' }}
-                  />
-                  <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#1E1B4B', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>
-                    {preset.name.split(' ')[0]}
-                  </span>
-                </button>
-              ))}
-            </div>
-
-            {/* Custom URL Input */}
-            <div style={{ marginBottom: '16px' }}>
-              <label className="input-label">Custom Image URL</label>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <input
-                  type="url"
-                  className="input-control"
-                  placeholder="https://example.com/photo.jpg"
-                  value={customAvatarUrl}
-                  onChange={(e) => setCustomAvatarUrl(e.target.value)}
-                />
-                <button
-                  type="button"
-                  className="btn btn-primary btn-sm"
-                  disabled={!customAvatarUrl}
-                  onClick={() => {
-                    if (customAvatarUrl) {
-                      setFormData({ ...formData, avatar: customAvatarUrl });
-                      updateProfile({ avatar: customAvatarUrl });
-                      setShowAvatarPicker(false);
-                      setCustomAvatarUrl('');
-                      addToast({ type: 'success', title: 'Avatar Set', message: 'Custom avatar URL applied.' });
-                    }
-                  }}
-                >
-                  Apply
-                </button>
+            {/* Modal Header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+              <div>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#1E1B4B', margin: 0 }}>
+                  Update Profile Photo
+                </h3>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: '2px 0 0 0' }}>
+                  Upload your own photo from device, pick an avatar, or enter a web link.
+                </p>
               </div>
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
               <button
                 type="button"
                 onClick={() => setShowAvatarPicker(false)}
-                className="btn btn-secondary btn-sm"
+                className="btn btn-ghost"
+                style={{ padding: '6px', borderRadius: '50%' }}
               >
-                Close
+                <X size={18} />
               </button>
+            </div>
+
+            {/* Current Preview Strip */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '16px',
+              padding: '14px',
+              backgroundColor: '#FDF2F8',
+              borderRadius: '16px',
+              border: '1.5px solid rgba(249, 168, 212, 0.5)',
+              marginBottom: '18px'
+            }}>
+              <img
+                src={previewAvatar || formData.avatar}
+                alt="Avatar Preview"
+                style={{ width: '64px', height: '64px', borderRadius: '18px', objectFit: 'cover', border: '2px solid #ffffff', boxShadow: '0 4px 12px rgba(236, 72, 153, 0.25)', backgroundColor: '#ffffff' }}
+              />
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#1E1B4B' }}>Photo Preview</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                  {uploadFileName ? `Selected: ${uploadFileName}` : 'Ready to be set as your campus profile picture'}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleApplyAvatar(previewAvatar)}
+                className="btn btn-primary btn-sm"
+                style={{ fontSize: '0.78rem', gap: '4px' }}
+              >
+                <Check size={14} />
+                <span>Apply Photo</span>
+              </button>
+            </div>
+
+            {/* Selector Tabs */}
+            <div style={{ display: 'flex', gap: '8px', borderBottom: '1px solid var(--border-color)', marginBottom: '16px', paddingBottom: '4px' }}>
+              <button
+                type="button"
+                onClick={() => setAvatarTab('upload')}
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  background: avatarTab === 'upload' ? 'rgba(236, 72, 153, 0.12)' : 'transparent',
+                  color: avatarTab === 'upload' ? '#EC4899' : 'var(--text-secondary)',
+                  fontWeight: avatarTab === 'upload' ? 800 : 600,
+                  fontSize: '0.825rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  cursor: 'pointer'
+                }}
+              >
+                <Upload size={14} />
+                <span>Upload from Device</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setAvatarTab('presets')}
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  background: avatarTab === 'presets' ? 'rgba(236, 72, 153, 0.12)' : 'transparent',
+                  color: avatarTab === 'presets' ? '#EC4899' : 'var(--text-secondary)',
+                  fontWeight: avatarTab === 'presets' ? 800 : 600,
+                  fontSize: '0.825rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  cursor: 'pointer'
+                }}
+              >
+                <Image size={14} />
+                <span>Avatar Gallery</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setAvatarTab('url')}
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  background: avatarTab === 'url' ? 'rgba(236, 72, 153, 0.12)' : 'transparent',
+                  color: avatarTab === 'url' ? '#EC4899' : 'var(--text-secondary)',
+                  fontWeight: avatarTab === 'url' ? 800 : 600,
+                  fontSize: '0.825rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  cursor: 'pointer'
+                }}
+              >
+                <ExternalLink size={14} />
+                <span>Web Image Link</span>
+              </button>
+            </div>
+
+            {/* TAB: UPLOAD FROM DEVICE / GALLERY */}
+            {avatarTab === 'upload' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  accept="image/png, image/jpeg, image/jpg, image/webp, image/gif"
+                  onChange={handleFileUpload}
+                  style={{ display: 'none' }}
+                />
+
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  style={{
+                    border: '2px dashed rgba(236, 72, 153, 0.4)',
+                    borderRadius: '16px',
+                    padding: '28px 16px',
+                    textAlign: 'center',
+                    backgroundColor: '#FFFDFE',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '10px'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.borderColor = '#EC4899'}
+                  onMouseLeave={(e) => e.currentTarget.style.borderColor = 'rgba(236, 72, 153, 0.4)'}
+                >
+                  <div style={{ width: '48px', height: '48px', borderRadius: '50%', backgroundColor: 'rgba(236, 72, 153, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#EC4899' }}>
+                    <Upload size={22} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#1E1B4B' }}>
+                      Click to Browse Gallery or Folder
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                      Supports JPG, PNG, WEBP & GIF up to 5MB
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-sm"
+                    style={{ marginTop: '4px', gap: '6px' }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      fileInputRef.current?.click();
+                    }}
+                  >
+                    <Image size={14} />
+                    <span>Choose Photo from Device</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* TAB: PRESET GALLERY */}
+            {avatarTab === 'presets' && (
+              <div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', maxHeight: '220px', overflowY: 'auto', paddingRight: '4px' }}>
+                  {avatarPresets.map((preset, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setPreviewAvatar(preset.url)}
+                      style={{
+                        border: previewAvatar === preset.url ? '3px solid #EC4899' : '2px solid rgba(249, 168, 212, 0.35)',
+                        borderRadius: '16px',
+                        padding: '4px',
+                        backgroundColor: '#ffffff',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: '4px',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      <img
+                        src={preset.url}
+                        alt={preset.name}
+                        style={{ width: '52px', height: '52px', borderRadius: '12px', objectFit: 'cover' }}
+                      />
+                      <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#1E1B4B', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>
+                        {preset.name.split(' ')[0]}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* TAB: WEB URL */}
+            {avatarTab === 'url' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <label className="input-label">Image URL</label>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <input
+                    type="url"
+                    className="input-control"
+                    placeholder="https://images.unsplash.com/..."
+                    value={customAvatarUrl}
+                    onChange={(e) => setCustomAvatarUrl(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm"
+                    disabled={!customAvatarUrl}
+                    onClick={() => {
+                      if (customAvatarUrl) {
+                        setPreviewAvatar(customAvatarUrl);
+                        addToast({ type: 'info', title: 'Preview Loaded', message: 'Click Apply Photo to save.' });
+                      }
+                    }}
+                  >
+                    Preview
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Modal Bottom Actions */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '20px', paddingTop: '14px', borderTop: '1px solid var(--border-color)' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  const def = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(formData.name || 'Priya')}`;
+                  setPreviewAvatar(def);
+                }}
+                className="btn btn-ghost btn-sm"
+                style={{ color: 'var(--text-secondary)', fontSize: '0.78rem', gap: '4px' }}
+              >
+                <RefreshCw size={13} />
+                <span>Reset to Default</span>
+              </button>
+
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowAvatarPicker(false)}
+                  className="btn btn-secondary btn-sm"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleApplyAvatar(previewAvatar)}
+                  className="btn btn-primary btn-sm"
+                  style={{ gap: '6px' }}
+                >
+                  <Save size={14} />
+                  <span>Save Photo</span>
+                </button>
+              </div>
             </div>
 
           </div>
