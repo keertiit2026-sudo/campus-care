@@ -3,8 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { CATEGORIES, PRIORITIES } from '../../data/categories';
 import { CategoryIcon, CategoryBadge, PriorityBadge } from '../common/Badge';
-import { reverseGeocodeAddress, detectCurrentLocation } from '../../utils/geoUtils';
-import { GpsMapView } from './GpsMapView';
+import { CampusLocationForm } from './CampusLocationForm';
 import { analyzeDraftClient } from '../../utils/intelligenceEngine';
 import { api } from '../../api/client';
 import { 
@@ -46,7 +45,6 @@ export const ComplaintSubmissionPage = () => {
           floorLevel: parsed.floorLevel || 'Ground Floor',
           roomNumber: parsed.roomNumber || '',
           additionalDetails: parsed.additionalDetails || '',
-          gpsLocation: parsed.gpsLocation || null,
           description: parsed.description || '',
           attachments: parsed.attachments || []
         };
@@ -60,7 +58,6 @@ export const ComplaintSubmissionPage = () => {
       floorLevel: 'Ground Floor',
       roomNumber: '',
       additionalDetails: '',
-      gpsLocation: null,
       description: '',
       attachments: []
     };
@@ -72,18 +69,11 @@ export const ComplaintSubmissionPage = () => {
   const [category, setCategory] = useState(initialState.category);
   const [priority, setPriority] = useState(initialState.priority);
 
-  // 1. Manual Location Fields (Preserved)
+  // Campus Location Fields
   const [buildingName, setBuildingName] = useState(initialState.buildingName);
   const [floorLevel, setFloorLevel] = useState(initialState.floorLevel);
   const [roomNumber, setRoomNumber] = useState(initialState.roomNumber);
   const [additionalDetails, setAdditionalDetails] = useState(initialState.additionalDetails);
-
-  // 2. Real GPS Location Detection State
-  const [gpsLocation, setGpsLocation] = useState(initialState.gpsLocation); // { latitude, longitude, accuracy }
-  const [gpsLoading, setGpsLoading] = useState(false);
-  const [gpsError, setGpsError] = useState('');
-  const [gpsSuccess, setGpsSuccess] = useState(!!initialState.gpsLocation);
-  const [isEditingGpsAddress, setIsEditingGpsAddress] = useState(false);
 
   const [description, setDescription] = useState(initialState.description);
   const [attachments, setAttachments] = useState(initialState.attachments);
@@ -114,9 +104,9 @@ export const ComplaintSubmissionPage = () => {
       description,
       category,
       priority,
-      location: buildingName ? `${buildingName} ${floorLevel} ${roomNumber}` : (gpsLocation?.address || '')
+      location: buildingName ? `${buildingName} ${floorLevel} ${roomNumber}` : ''
     });
-  }, [title, description, category, priority, buildingName, floorLevel, roomNumber, gpsLocation]);
+  }, [title, description, category, priority, buildingName, floorLevel, roomNumber]);
 
   // Save draft to sessionStorage on changes
   useEffect(() => {
@@ -128,12 +118,11 @@ export const ComplaintSubmissionPage = () => {
       floorLevel,
       roomNumber,
       additionalDetails,
-      gpsLocation,
       description,
       attachments
     };
     sessionStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
-  }, [title, category, priority, buildingName, floorLevel, roomNumber, additionalDetails, gpsLocation, description, attachments]);
+  }, [title, category, priority, buildingName, floorLevel, roomNumber, additionalDetails, description, attachments]);
 
   // Stop camera stream on unmount
   const stopCameraStream = () => {
@@ -146,49 +135,8 @@ export const ComplaintSubmissionPage = () => {
   };
 
   useEffect(() => {
-    // Auto-fetch location on load if not already detected
-    if (!initialState.gpsLocation) {
-      handleGetGPSLocation();
-    }
     return () => stopCameraStream();
   }, []);
-
-  // --- Real Geolocation Detection (Address Only) ---
-  const handleGetGPSLocation = async () => {
-    setGpsLoading(true);
-    setGpsError('');
-    setIsEditingGpsAddress(false);
-
-    try {
-      const loc = await detectCurrentLocation();
-      if (loc && loc.address) {
-        setGpsLocation({
-          address: loc.address,
-          buildingName: loc.buildingName,
-          latitude: loc.latitude,
-          longitude: loc.longitude,
-          accuracy: loc.accuracy,
-          isHighAccuracy: loc.isHighAccuracy
-        });
-        setGpsSuccess(true);
-        // Auto-fill building name if not already typed
-        setBuildingName(prev => (!prev.trim() && loc.buildingName ? loc.buildingName : prev));
-      } else {
-        setGpsError('Unable to auto-detect location. You can enter location details below or retry.');
-      }
-    } catch (err) {
-      setGpsError('Location service timed out. You can enter location details below or retry.');
-    } finally {
-      setGpsLoading(false);
-    }
-  };
-
-  const handleClearGPS = () => {
-    setGpsLocation(null);
-    setGpsSuccess(false);
-    setGpsError('');
-    setIsEditingGpsAddress(false);
-  };
 
   // Live Camera Viewfinder
   const startLiveCamera = async (facingMode = 'environment') => {
@@ -359,10 +307,8 @@ export const ComplaintSubmissionPage = () => {
       errs.title = 'Title must be at least 5 characters';
     }
 
-    // Require location: either GPS detected OR manual building name provided
-    const hasLocation = (buildingName && buildingName.trim()) || (gpsLocation && gpsLocation.address);
-    if (!hasLocation) {
-      errs.buildingName = 'Please detect your location or enter Building / Block Name';
+    if (!buildingName || !buildingName.trim()) {
+      errs.buildingName = 'Please enter or select a Building / Block Name';
     }
 
     if (!description.trim() || description.trim().length < 15) {
@@ -378,32 +324,22 @@ export const ComplaintSubmissionPage = () => {
 
     setIsSubmitting(true);
     try {
-      const derivedBuilding = buildingName.trim() || gpsLocation?.buildingName || (gpsLocation?.address ? gpsLocation.address.split(',')[0].trim() : 'Campus Zone');
-      const derivedRoom = roomNumber.trim() || 'General / Campus Area';
+      const derivedBuilding = buildingName.trim();
+      const derivedFloor = floorLevel || 'Ground Floor';
+      const derivedRoom = roomNumber.trim();
 
-      // 1. Manual location object
+      // Structured location object
       const manualData = {
         building: derivedBuilding,
-        floor: floorLevel,
-        roomOrSpot: derivedRoom,
+        floor: derivedFloor,
+        roomOrSpot: derivedRoom || 'General / Campus Area',
         additionalDetails: additionalDetails.trim()
       };
 
-      // 2. GPS location object (saved as requested: { address: "..." })
-      const gpsData = {
-        address: gpsLocation?.address || null
-      };
-
-      // 3. Composite location string
-      const campusParts = [];
-      if (derivedBuilding) campusParts.push(derivedBuilding);
-      if (floorLevel) campusParts.push(floorLevel);
-      if (derivedRoom && derivedRoom !== 'General / Campus Area') campusParts.push(derivedRoom);
-
-      const campusLocationStr = campusParts.join(' → ');
-      const compositeLocationString = gpsLocation?.address
-        ? `${campusLocationStr} (${gpsLocation.address})`
-        : (campusLocationStr || 'Campus Location');
+      // Composite location string
+      const campusParts = [derivedBuilding, derivedFloor];
+      if (derivedRoom) campusParts.push(derivedRoom);
+      const compositeLocationString = campusParts.join(' → ');
 
       const created = await submitComplaint({
         title,
@@ -412,8 +348,7 @@ export const ComplaintSubmissionPage = () => {
         location: compositeLocationString,
         manualLocation: manualData,
         locationDetails: manualData,
-        gpsLocation: gpsData,
-        floorLevel,
+        floorLevel: derivedFloor,
         description,
         attachments
       });
@@ -615,10 +550,8 @@ export const ComplaintSubmissionPage = () => {
             )}
           </div>
 
-          {/* --- REAL AUTOMATIC GPS MAP VIEWPORT --- */}
-          <GpsMapView
-            gpsLocation={gpsLocation}
-            setGpsLocation={setGpsLocation}
+          {/* --- Campus Location & Area Selector --- */}
+          <CampusLocationForm
             buildingName={buildingName}
             setBuildingName={setBuildingName}
             floorLevel={floorLevel}
@@ -629,11 +562,6 @@ export const ComplaintSubmissionPage = () => {
             setAdditionalDetails={setAdditionalDetails}
             error={errors.buildingName}
           />
-          {errors.buildingName && (
-            <span style={{ fontSize: '0.75rem', color: '#ef4444', marginTop: '-12px', display: 'block' }}>
-              {errors.buildingName}
-            </span>
-          )}
 
           {/* Description */}
           <div className="input-group" style={{ marginBottom: 0 }}>

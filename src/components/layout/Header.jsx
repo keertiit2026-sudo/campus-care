@@ -256,12 +256,16 @@ export const Header = ({ onToggleSidebar }) => {
             <img
               src={userAvatar}
               alt={userName}
+              referrerPolicy="no-referrer"
               style={{
                 width: '34px',
                 height: '34px',
                 borderRadius: '50%',
                 objectFit: 'cover',
                 border: '1.5px solid #EC4899'
+              }}
+              onError={(e) => {
+                e.target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(userName || 'User')}`;
               }}
             />
             <div style={{ textAlign: 'left', lineHeight: 1.2 }}>

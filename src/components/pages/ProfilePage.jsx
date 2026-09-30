@@ -33,9 +33,74 @@ import {
   X,
   ListFilter,
   BarChart3,
-  LogOut
+  LogOut,
+  Link2,
+  Clipboard,
+  AlertTriangle,
+  Globe,
+  Loader2
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+
+/**
+ * Intelligent Image URL cleaner & resolver
+ * Extracts real direct image URLs from Google Images redirects, Unsplash page URLs, GitHub profiles, and Imgur links.
+ */
+export const cleanAndResolveImageUrl = (rawUrl) => {
+  if (!rawUrl || typeof rawUrl !== 'string') return '';
+  let cleaned = rawUrl.trim();
+  
+  // Strip quotes or wrapper brackets
+  cleaned = cleaned.replace(/^["'<(]+|["'>)]+$/g, '');
+  
+  // If markdown link format: ![title](url) or [title](url)
+  const mdMatch = cleaned.match(/\((https?:\/\/[^\s)]+)\)/);
+  if (mdMatch) cleaned = mdMatch[1];
+
+  try {
+    const parsed = new URL(cleaned);
+    
+    // 1. Google Images Search / Redirect URL handler
+    // e.g. https://www.google.com/imgres?imgurl=https%3A%2F%2F...&tbnid=...
+    if (parsed.hostname.includes('google.') && (parsed.pathname.includes('/imgres') || parsed.pathname.includes('/url') || parsed.pathname.includes('/search'))) {
+      const imgParam = parsed.searchParams.get('imgurl') || parsed.searchParams.get('url') || parsed.searchParams.get('q');
+      if (imgParam && (imgParam.startsWith('http://') || imgParam.startsWith('https://'))) {
+        return decodeURIComponent(imgParam);
+      }
+    }
+    
+    // 2. Unsplash Page URL -> Direct Image URL
+    // e.g. https://unsplash.com/photos/a-woman-smiling-d1UPkiFd04A
+    if (parsed.hostname === 'unsplash.com' && parsed.pathname.startsWith('/photos/')) {
+      const parts = parsed.pathname.split('/').filter(Boolean);
+      const photoSlug = parts[parts.length - 1];
+      const match = photoSlug.match(/([a-zA-Z0-9_-]+)$/);
+      if (match) {
+        return `https://images.unsplash.com/photo-${match[1]}?w=400&auto=format&fit=crop&q=80`;
+      }
+    }
+
+    // 3. Imgur Webpage URL -> Direct Image URL
+    // e.g. https://imgur.com/ABCDEF
+    if (parsed.hostname === 'imgur.com' && !parsed.pathname.includes('.')) {
+      const id = parsed.pathname.split('/').filter(Boolean).pop();
+      if (id) {
+        return `https://i.imgur.com/${id}.jpg`;
+      }
+    }
+
+    // 4. GitHub profile URL -> Direct Avatar URL
+    // e.g. https://github.com/torvalds
+    if (parsed.hostname === 'github.com' && !parsed.pathname.includes('.') && parsed.pathname.split('/').filter(Boolean).length === 1) {
+      const username = parsed.pathname.split('/').filter(Boolean)[0];
+      return `https://github.com/${username}.png?size=200`;
+    }
+
+    return cleaned;
+  } catch (e) {
+    return cleaned;
+  }
+};
 
 export const ProfilePage = () => {
   const navigate = useNavigate();
@@ -64,6 +129,8 @@ export const ProfilePage = () => {
   const [previewAvatar, setPreviewAvatar] = useState(null);
   const [customAvatarUrl, setCustomAvatarUrl] = useState('');
   const [uploadFileName, setUploadFileName] = useState('');
+  const [urlStatus, setUrlStatus] = useState('idle'); // 'idle' | 'loading' | 'valid' | 'error'
+  const [urlErrorMessage, setUrlErrorMessage] = useState('');
 
   // Profile Form state
   const [formData, setFormData] = useState(() => {
@@ -227,9 +294,107 @@ export const ProfilePage = () => {
     reader.readAsDataURL(file);
   };
 
+  // Sample quick web images for testing/inspiration
+  const sampleWebImages = [
+    { name: 'Student Scholar', url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80' },
+    { name: 'Tech Engineer', url: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=300&auto=format&fit=crop&q=80' },
+    { name: 'Professional Headshot', url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&auto=format&fit=crop&q=80' },
+    { name: 'Campus Leader', url: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=300&auto=format&fit=crop&q=80' },
+    { name: '3D Avatar Bot', url: 'https://api.dicebear.com/7.x/bottts/svg?seed=CampusCare' }
+  ];
+
+  // Validate and load image from URL live in real time
+  const handleUrlChange = (rawUrl) => {
+    if (rawUrl === undefined || rawUrl === null) return;
+    
+    if (!rawUrl.trim()) {
+      setCustomAvatarUrl('');
+      setUrlStatus('idle');
+      setUrlErrorMessage('');
+      return;
+    }
+
+    const resolved = cleanAndResolveImageUrl(rawUrl);
+    setCustomAvatarUrl(resolved);
+
+    if (!resolved.startsWith('http://') && !resolved.startsWith('https://') && !resolved.startsWith('data:image/')) {
+      setUrlStatus('error');
+      setUrlErrorMessage('Please enter a valid URL starting with https:// or http://');
+      return;
+    }
+
+    // Immediately update preview avatar with resolved URL
+    setPreviewAvatar(resolved);
+    setUrlStatus('loading');
+    setUrlErrorMessage('');
+
+    // Pre-test image loading in background with no-referrer
+    const img = new window.Image();
+    img.referrerPolicy = 'no-referrer';
+
+    let isFinished = false;
+    const safetyTimer = setTimeout(() => {
+      if (!isFinished) {
+        isFinished = true;
+        setUrlStatus('valid');
+      }
+    }, 4000);
+
+    img.onload = () => {
+      if (isFinished) return;
+      isFinished = true;
+      clearTimeout(safetyTimer);
+      setUrlStatus('valid');
+      setPreviewAvatar(resolved);
+      setUrlErrorMessage('');
+    };
+
+    img.onerror = () => {
+      if (isFinished) return;
+      isFinished = true;
+      clearTimeout(safetyTimer);
+      setUrlStatus('error');
+      setUrlErrorMessage('Unable to load image from this URL. Make sure it is a direct image link (.jpg, .png, .webp) and is publicly accessible.');
+    };
+
+    img.src = resolved;
+  };
+
+  // Quick paste link from clipboard
+  const handlePasteFromClipboard = async () => {
+    try {
+      if (navigator.clipboard && navigator.clipboard.readText) {
+        const text = await navigator.clipboard.readText();
+        if (text && text.trim()) {
+          handleUrlChange(text.trim());
+          addToast({
+            type: 'info',
+            title: 'Link Pasted 📋',
+            message: 'Loading image preview from web...'
+          });
+        } else {
+          addToast({
+            type: 'warning',
+            title: 'Clipboard Empty',
+            message: 'No link or text found in clipboard.'
+          });
+        }
+      }
+    } catch (err) {
+      console.warn('Clipboard read failed:', err);
+    }
+  };
+
   // Save selected avatar
   const handleApplyAvatar = async (avatarUrlToApply) => {
-    const targetUrl = avatarUrlToApply || previewAvatar;
+    let targetUrl = avatarUrlToApply;
+    if (!targetUrl) {
+      if (avatarTab === 'url' && customAvatarUrl?.trim()) {
+        targetUrl = customAvatarUrl.trim();
+      } else {
+        targetUrl = previewAvatar;
+      }
+    }
     if (!targetUrl) return;
 
     setFormData(prev => ({ ...prev, avatar: targetUrl }));
@@ -499,6 +664,7 @@ export const ProfilePage = () => {
                 <img
                   src={formData.avatar}
                   alt={formData.name}
+                  referrerPolicy="no-referrer"
                   style={{
                     width: '102px',
                     height: '102px',
@@ -510,7 +676,7 @@ export const ProfilePage = () => {
                     display: 'block'
                   }}
                   onError={(e) => {
-                    e.target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(formData.name)}`;
+                    e.target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(formData.name || 'Student')}`;
                   }}
                 />
                 <button
@@ -1663,7 +1829,18 @@ export const ProfilePage = () => {
               <img
                 src={previewAvatar || formData.avatar}
                 alt="Avatar Preview"
+                referrerPolicy="no-referrer"
                 style={{ width: '64px', height: '64px', borderRadius: '18px', objectFit: 'cover', border: '2px solid #ffffff', boxShadow: '0 4px 12px rgba(236, 72, 153, 0.25)', backgroundColor: '#ffffff' }}
+                onLoad={() => {
+                  if (avatarTab === 'url' && customAvatarUrl) setUrlStatus('valid');
+                }}
+                onError={(e) => {
+                  if (avatarTab === 'url') {
+                    setUrlStatus('error');
+                    setUrlErrorMessage('Could not load image from this URL. Please verify the URL points directly to an image (.jpg, .png, .webp).');
+                  }
+                  e.target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(formData.name || 'Student')}`;
+                }}
               />
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#1E1B4B' }}>Photo Preview</div>
@@ -1843,30 +2020,212 @@ export const ProfilePage = () => {
 
             {/* TAB: WEB URL */}
             {avatarTab === 'url' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <label className="input-label">Image URL</label>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <input
-                    type="url"
-                    className="input-control"
-                    placeholder="https://images.unsplash.com/..."
-                    value={customAvatarUrl}
-                    onChange={(e) => setCustomAvatarUrl(e.target.value)}
-                  />
-                  <button
-                    type="button"
-                    className="btn btn-secondary btn-sm"
-                    disabled={!customAvatarUrl}
-                    onClick={() => {
-                      if (customAvatarUrl) {
-                        setPreviewAvatar(customAvatarUrl);
-                        addToast({ type: 'info', title: 'Preview Loaded', message: 'Click Apply Photo to save.' });
-                      }
-                    }}
-                  >
-                    Preview
-                  </button>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div>
+                  <label className="input-label" style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+                    <Globe size={14} color="#EC4899" />
+                    <span>Paste Web Image Link (URL)</span>
+                  </label>
+                  <p style={{ margin: '0 0 10px 0', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                    Paste any direct image URL from your browser (e.g. Unsplash, Google Images, GitHub) to instantly preview and set as your avatar.
+                  </p>
+                  
+                  {/* URL Input & Actions */}
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'stretch' }}>
+                    <div style={{ position: 'relative', flex: 1 }}>
+                      <Link2 size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                      <input
+                        type="url"
+                        className="input-control"
+                        placeholder="https://images.unsplash.com/photo-..."
+                        value={customAvatarUrl}
+                        onChange={(e) => handleUrlChange(e.target.value)}
+                        onPaste={(e) => {
+                          const pasted = e.clipboardData.getData('text');
+                          if (pasted) handleUrlChange(pasted);
+                        }}
+                        style={{ paddingLeft: '36px', fontSize: '0.85rem' }}
+                      />
+                      {customAvatarUrl && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCustomAvatarUrl('');
+                            setUrlStatus('idle');
+                            setUrlErrorMessage('');
+                          }}
+                          style={{
+                            position: 'absolute',
+                            right: '10px',
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            border: 'none',
+                            background: 'transparent',
+                            color: 'var(--text-muted)',
+                            cursor: 'pointer',
+                            padding: '2px'
+                          }}
+                          title="Clear URL"
+                        >
+                          <X size={14} />
+                        </button>
+                      )}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handlePasteFromClipboard}
+                      className="btn btn-secondary btn-sm"
+                      style={{ gap: '6px', whiteSpace: 'nowrap', padding: '0 14px' }}
+                      title="Paste link from clipboard"
+                    >
+                      <Clipboard size={14} />
+                      <span>Paste Link</span>
+                    </button>
+                  </div>
                 </div>
+
+                {/* Real-Time Status & Image Preview Box */}
+                {urlStatus === 'loading' && (
+                  <div style={{
+                    padding: '14px',
+                    borderRadius: '12px',
+                    backgroundColor: 'rgba(236, 72, 153, 0.08)',
+                    border: '1px solid rgba(236, 72, 153, 0.2)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    fontSize: '0.825rem',
+                    color: '#EC4899'
+                  }}>
+                    <Loader2 size={18} className="animate-spin" />
+                    <span>Verifying image link and generating preview...</span>
+                  </div>
+                )}
+
+                {urlStatus === 'error' && (
+                  <div style={{
+                    padding: '12px 14px',
+                    borderRadius: '12px',
+                    backgroundColor: 'rgba(239, 68, 68, 0.08)',
+                    border: '1px solid rgba(239, 68, 68, 0.25)',
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '10px',
+                    fontSize: '0.8rem',
+                    color: '#ef4444'
+                  }}>
+                    <AlertTriangle size={16} style={{ flexShrink: 0, marginTop: '2px' }} />
+                    <div>
+                      <strong>Invalid Image Link: </strong>
+                      {urlErrorMessage || 'Could not load image. Make sure the URL is public and ends with .jpg, .png, or .webp.'}
+                    </div>
+                  </div>
+                )}
+
+                {/* Real-Time Live Image Preview Box */}
+                {customAvatarUrl && (
+                  <div style={{
+                    padding: '14px',
+                    borderRadius: '14px',
+                    backgroundColor: urlStatus === 'error' ? 'rgba(239, 68, 68, 0.06)' : 'rgba(16, 185, 129, 0.06)',
+                    border: urlStatus === 'error' ? '1.5px solid rgba(239, 68, 68, 0.3)' : '1.5px solid rgba(16, 185, 129, 0.3)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    flexWrap: 'wrap',
+                    gap: '12px'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <img
+                        src={customAvatarUrl}
+                        alt="Web Preview"
+                        referrerPolicy="no-referrer"
+                        onLoad={() => {
+                          setUrlStatus('valid');
+                          setUrlErrorMessage('');
+                        }}
+                        onError={(e) => {
+                          setUrlStatus('error');
+                          setUrlErrorMessage('Could not load image. Make sure the URL is public and ends with .jpg, .png, or .webp.');
+                          e.target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=preview`;
+                        }}
+                        style={{
+                          width: '56px',
+                          height: '56px',
+                          borderRadius: '16px',
+                          objectFit: 'cover',
+                          border: urlStatus === 'error' ? '2px solid #ef4444' : '2px solid #10b981',
+                          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                          backgroundColor: '#ffffff'
+                        }}
+                      />
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          {urlStatus === 'error' ? (
+                            <>
+                              <AlertTriangle size={15} color="#ef4444" />
+                              <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#ef4444' }}>
+                                Image Load Issue
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle2 size={15} color="#10b981" />
+                              <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#10b981' }}>
+                                Live Image Loaded!
+                              </span>
+                            </>
+                          )}
+                        </div>
+                        <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', marginTop: '2px', maxWidth: '280px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {customAvatarUrl}
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => handleApplyAvatar(customAvatarUrl)}
+                      className="btn btn-primary btn-sm"
+                      style={{ gap: '6px', fontSize: '0.78rem' }}
+                    >
+                      <Check size={14} />
+                      <span>Use This Photo</span>
+                    </button>
+                  </div>
+                )}
+
+                {/* Quick Sample Links */}
+                <div style={{ paddingTop: '6px', borderTop: '1px solid var(--border-color)' }}>
+                  <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    <Sparkles size={12} color="#EC4899" />
+                    <span>Try Sample Image URLs:</span>
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                    {sampleWebImages.map((sample, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => handleUrlChange(sample.url)}
+                        style={{
+                          padding: '4px 10px',
+                          borderRadius: '12px',
+                          border: '1px solid var(--border-color)',
+                          backgroundColor: customAvatarUrl === sample.url ? 'rgba(236, 72, 153, 0.12)' : 'var(--bg-tertiary)',
+                          color: customAvatarUrl === sample.url ? '#EC4899' : 'var(--text-secondary)',
+                          fontSize: '0.75rem',
+                          fontWeight: customAvatarUrl === sample.url ? 700 : 500,
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease'
+                        }}
+                      >
+                        {sample.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
               </div>
             )}
 
