@@ -50,20 +50,35 @@ export const AuthProvider = ({ children }) => {
       return res.user;
     } catch (apiErr) {
       // Graceful offline/demo mode fallback when backend is not connected
-      console.warn('Backend API login unavailable, using resilient demo authentication fallback:', apiErr.message);
+      console.warn('Backend API login unavailable, using resilient authentication fallback:', apiErr.message);
       
       const idLower = (email || '').toLowerCase().trim();
+      const rawId = (email || '').trim();
       
-      // Verify password if custom password was saved
+      // Load saved passwords
       const savedPasswords = JSON.parse(localStorage.getItem(PASSWORDS_KEY) || '{}');
-      const savedPass = savedPasswords[idLower];
+      const savedPass = savedPasswords[idLower] || savedPasswords[rawId] || savedPasswords[rawId.toLowerCase()];
       if (savedPass && password && savedPass !== password) {
-        throw new Error('Incorrect password. Please use the updated password you set in Security & Settings.');
+        throw new Error('Incorrect password. Please verify your password or reset it in Security & Settings.');
       }
+
+      // Check student registry for pre-registered students or previous registrations
+      let registryStudent = null;
+      try {
+        const savedRegistry = localStorage.getItem('campuscare_student_registry_v1');
+        if (savedRegistry) {
+          const list = JSON.parse(savedRegistry);
+          registryStudent = list.find(s => 
+            (s.email && s.email.toLowerCase() === idLower) ||
+            (s.studentId && s.studentId.toLowerCase() === idLower) ||
+            (s.name && s.name.toLowerCase() === idLower)
+          );
+        }
+      } catch (e) {}
 
       let matchedUser = null;
 
-      if (idLower === 'admin@college.edu' || idLower.includes('admin')) {
+      if (idLower === 'admin@college.edu' || idLower === 'dean' || idLower.includes('admin')) {
         matchedUser = {
           id: 'usr_admin_1',
           name: 'Dean Sarah Jenkins',
@@ -84,18 +99,48 @@ export const AuthProvider = ({ children }) => {
           roleTitle: 'Lead Network Systems Specialist',
           avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80'
         };
-      } else {
+      } else if (registryStudent) {
+        // Authenticate as the exact registered student
         matchedUser = {
-          id: 'usr_student_1',
-          name: idLower.includes('@') ? idLower.split('@')[0].replace('.', ' ') : 'Priya Sharma',
-          email: idLower.includes('@') ? idLower : 'priya.sharma@college.edu',
-          role: 'student',
-          studentId: idLower.startsWith('stu-') ? idLower.toUpperCase() : 'STU-2024-8841',
-          department: 'Computer Science & Engineering',
-          year: '3rd Year (Semester 5)',
-          hostel: 'Gargi Hall, Room 314',
-          avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'
+          ...registryStudent,
+          role: registryStudent.portalRole || 'student'
         };
+      } else {
+        // Dynamic real student registration on first login
+        const studentDisplayName = idLower.includes('@') 
+          ? idLower.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+          : idLower.startsWith('stu-') ? `Student (${idLower.toUpperCase()})` : idLower;
+        
+        matchedUser = {
+          id: `usr_stu_${Date.now()}`,
+          name: studentDisplayName,
+          email: idLower.includes('@') ? idLower : `${idLower.replace(/\s+/g, '.')}@college.edu`,
+          role: 'student',
+          studentId: idLower.startsWith('stu-') ? idLower.toUpperCase() : `STU-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
+          department: 'Computer Science & Engineering',
+          year: '1st Year',
+          hostel: 'Campus Residence',
+          enrollmentStatus: 'Enrolled & Verified',
+          registeredBatch: `Academic Year ${new Date().getFullYear()}–${new Date().getFullYear() + 4}`,
+          slaTier: 'Standard Tier (24h)',
+          avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(studentDisplayName)}`
+        };
+
+        // Add dynamically created student to registry
+        try {
+          const savedRegistry = JSON.parse(localStorage.getItem('campuscare_student_registry_v1') || '[]');
+          if (!savedRegistry.some(s => s.email === matchedUser.email || s.studentId === matchedUser.studentId)) {
+            savedRegistry.push(matchedUser);
+            localStorage.setItem('campuscare_student_registry_v1', JSON.stringify(savedRegistry));
+          }
+        } catch (e) {}
+      }
+
+      // Save credentials for future logins
+      if (password) {
+        if (matchedUser.email) savedPasswords[matchedUser.email.toLowerCase()] = password;
+        if (matchedUser.studentId) savedPasswords[matchedUser.studentId.toLowerCase()] = password;
+        localStorage.setItem(PASSWORDS_KEY, JSON.stringify(savedPasswords));
       }
 
       const mockToken = 'mock_jwt_token_' + Date.now();
@@ -119,10 +164,10 @@ export const AuthProvider = ({ children }) => {
       setUser(res.user);
       if (res.token) localStorage.setItem(TOKEN_KEY, res.token);
       if (res.user) localStorage.setItem(USER_KEY, JSON.stringify(res.user));
-      if (studentData.password && studentData.email) {
-        const idLower = studentData.email.toLowerCase().trim();
+      if (studentData.password) {
         const savedPasswords = JSON.parse(localStorage.getItem(PASSWORDS_KEY) || '{}');
-        savedPasswords[idLower] = studentData.password;
+        if (studentData.email) savedPasswords[studentData.email.toLowerCase().trim()] = studentData.password;
+        if (studentData.studentId) savedPasswords[studentData.studentId.toLowerCase().trim()] = studentData.password;
         localStorage.setItem(PASSWORDS_KEY, JSON.stringify(savedPasswords));
       }
       setAuthModalOpen(false);
@@ -137,18 +182,32 @@ export const AuthProvider = ({ children }) => {
         role: 'student',
         department: studentData.department || 'Computer Science & Engineering',
         year: studentData.year || '1st Year',
-        hostel: studentData.hostel || 'Day Scholar',
+        hostel: studentData.hostel || 'Campus Residence',
+        enrollmentStatus: 'Enrolled & Verified',
+        registeredBatch: `Academic Year ${new Date().getFullYear()}–${new Date().getFullYear() + 4}`,
+        slaTier: 'Standard Tier (24h)',
         avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(studentData.name)}`
       };
+
+      // Add newly registered student to student registry so Admin sees them immediately
+      try {
+        const savedRegistry = JSON.parse(localStorage.getItem('campuscare_student_registry_v1') || '[]');
+        if (!savedRegistry.some(s => s.email === newUser.email || s.studentId === newUser.studentId)) {
+          savedRegistry.unshift(newUser);
+          localStorage.setItem('campuscare_student_registry_v1', JSON.stringify(savedRegistry));
+        }
+      } catch (e) {}
+
       const mockToken = 'mock_jwt_token_' + Date.now();
       setToken(mockToken);
       setUser(newUser);
       localStorage.setItem(TOKEN_KEY, mockToken);
       localStorage.setItem(USER_KEY, JSON.stringify(newUser));
-      if (studentData.password && studentData.email) {
-        const idLower = studentData.email.toLowerCase().trim();
+      
+      if (studentData.password) {
         const savedPasswords = JSON.parse(localStorage.getItem(PASSWORDS_KEY) || '{}');
-        savedPasswords[idLower] = studentData.password;
+        if (studentData.email) savedPasswords[studentData.email.toLowerCase().trim()] = studentData.password;
+        if (studentData.studentId) savedPasswords[studentData.studentId.toLowerCase().trim()] = studentData.password;
         localStorage.setItem(PASSWORDS_KEY, JSON.stringify(savedPasswords));
       }
       setAuthModalOpen(false);
