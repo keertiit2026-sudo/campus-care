@@ -12,13 +12,13 @@ export const BuildingDetailDrawer = ({ building, onClose }) => {
 
   if (!building) return null;
 
-  const total = building.complaintCount || 0;
-  const categories = building.categoryBreakdown || building.categories || [];
-  const mostAffected = building.mostAffectedLocation || 'General Campus Area';
-  const recurring = building.possibleRecurringIssue || (building.recurringDetected ? 'Wi-Fi / Electrical' : null);
+  const total = building.totalCount ?? building.complaintCount ?? 0;
+  const categories = building.categoryBreakdown || (Array.isArray(building.categories) ? building.categories : Object.entries(building.categories || {}).map(([name, count]) => ({ name, count }))) || [];
+  const mostAffected = building.mostAffectedLocation || building.topZone || 'General Campus Area';
+  const recurring = building.possibleRecurringIssue || (building.recurringDetected ? `${building.topCategory || 'Infrastructure'} in ${building.topZone || 'Facility'}` : null);
   const avgResolution = building.avgResolutionTimeHours !== undefined ? building.avgResolutionTimeHours : 4.2;
   const slaCompliance = building.slaCompliancePercent !== undefined ? building.slaCompliancePercent : 94;
-  const recentComplaints = building.recentComplaints || [];
+  const recentComplaints = building.complaints || building.recentComplaints || [];
 
   return (
     <div style={{

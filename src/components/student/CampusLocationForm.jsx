@@ -15,21 +15,6 @@ export const FLOOR_OPTIONS = [
   'Rooftop'
 ];
 
-export const POPULAR_BUILDINGS = [
-  'Computer Science & IT Block',
-  'Main Academic Block',
-  'Central Academic Library',
-  'Electronics & Electrical Block',
-  'Mechanical & Civil Engg Lab',
-  'Student Hostel Block A (Boys)',
-  'Student Hostel Block B (Girls)',
-  'Central Canteen & Food Court',
-  'Auditorium & Seminar Complex',
-  'Campus Health & Medical Center',
-  'Sports Complex & Gymnasium',
-  'Innovation & Research Lab'
-];
-
 export const CampusLocationForm = ({
   buildingName,
   setBuildingName,
@@ -116,20 +101,14 @@ export const CampusLocationForm = ({
           <input
             type="text"
             className="input-control"
-            placeholder="e.g. Computer Science & IT Block..."
+            placeholder="e.g. Enter building or block name..."
             value={buildingName}
             onChange={(e) => setBuildingName(e.target.value)}
-            list="campus-building-datalist"
             style={{
               fontSize: '0.86rem',
               borderColor: error ? '#ef4444' : undefined
             }}
           />
-          <datalist id="campus-building-datalist">
-            {POPULAR_BUILDINGS.map((b, i) => (
-              <option key={i} value={b} />
-            ))}
-          </datalist>
           {error && (
             <span style={{ fontSize: '0.75rem', color: '#ef4444', marginTop: '3px', display: 'block' }}>
               {error}

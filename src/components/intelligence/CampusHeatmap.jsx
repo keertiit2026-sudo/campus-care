@@ -171,7 +171,8 @@ export const CampusHeatmap = ({
           gap: '14px'
         }}>
           {(Array.isArray(buildings) ? buildings : (buildings?.buildings || [])).map(b => {
-            const colors = getDensityColor(b.density, b.complaintCount);
+            const count = b.totalCount ?? b.complaintCount ?? b.activeCount ?? 0;
+            const colors = getDensityColor(b.density, count);
             const isSelected = selectedBuilding && (selectedBuilding.id === b.id || selectedBuilding.name === b.name);
 
             return (
@@ -215,7 +216,7 @@ export const CampusHeatmap = ({
                         {b.name}
                       </div>
                       <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                        {b.zone || 'Campus Zone'}
+                        {b.topZone || b.zone || 'Campus Zone'}
                       </div>
                     </div>
                   </div>
@@ -228,7 +229,7 @@ export const CampusHeatmap = ({
                     fontSize: '0.72rem',
                     fontWeight: 800
                   }}>
-                    {b.complaintCount} {b.complaintCount === 1 ? 'ticket' : 'tickets'}
+                    {count} {count === 1 ? 'ticket' : 'tickets'}
                   </div>
                 </div>
 
@@ -266,9 +267,9 @@ export const CampusHeatmap = ({
                 </div>
 
                 {/* Most affected spot */}
-                {b.mostAffectedLocation && (
+                {(b.mostAffectedLocation || b.topZone) && (
                   <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', background: 'var(--bg-tertiary)', padding: '4px 8px', borderRadius: '6px' }}>
-                    📍 Hotspot: <strong>{b.mostAffectedLocation}</strong>
+                    📍 Hotspot: <strong>{b.mostAffectedLocation || b.topZone}</strong>
                   </div>
                 )}
               </div>

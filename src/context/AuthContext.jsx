@@ -5,6 +5,7 @@ const AuthContext = createContext();
 
 const TOKEN_KEY = 'campuscare_jwt_token';
 const USER_KEY = 'campuscare_user_profile';
+const PASSWORDS_KEY = 'campuscare_user_passwords';
 
 export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(() => localStorage.getItem(TOKEN_KEY) || null);
@@ -52,6 +53,14 @@ export const AuthProvider = ({ children }) => {
       console.warn('Backend API login unavailable, using resilient demo authentication fallback:', apiErr.message);
       
       const idLower = (email || '').toLowerCase().trim();
+      
+      // Verify password if custom password was saved
+      const savedPasswords = JSON.parse(localStorage.getItem(PASSWORDS_KEY) || '{}');
+      const savedPass = savedPasswords[idLower];
+      if (savedPass && password && savedPass !== password) {
+        throw new Error('Incorrect password. Please use the updated password you set in Security & Settings.');
+      }
+
       let matchedUser = null;
 
       if (idLower === 'admin@college.edu' || idLower.includes('admin')) {
@@ -110,6 +119,12 @@ export const AuthProvider = ({ children }) => {
       setUser(res.user);
       if (res.token) localStorage.setItem(TOKEN_KEY, res.token);
       if (res.user) localStorage.setItem(USER_KEY, JSON.stringify(res.user));
+      if (studentData.password && studentData.email) {
+        const idLower = studentData.email.toLowerCase().trim();
+        const savedPasswords = JSON.parse(localStorage.getItem(PASSWORDS_KEY) || '{}');
+        savedPasswords[idLower] = studentData.password;
+        localStorage.setItem(PASSWORDS_KEY, JSON.stringify(savedPasswords));
+      }
       setAuthModalOpen(false);
       return res.user;
     } catch (apiErr) {
@@ -130,6 +145,12 @@ export const AuthProvider = ({ children }) => {
       setUser(newUser);
       localStorage.setItem(TOKEN_KEY, mockToken);
       localStorage.setItem(USER_KEY, JSON.stringify(newUser));
+      if (studentData.password && studentData.email) {
+        const idLower = studentData.email.toLowerCase().trim();
+        const savedPasswords = JSON.parse(localStorage.getItem(PASSWORDS_KEY) || '{}');
+        savedPasswords[idLower] = studentData.password;
+        localStorage.setItem(PASSWORDS_KEY, JSON.stringify(savedPasswords));
+      }
       setAuthModalOpen(false);
       return newUser;
     } finally {
@@ -162,10 +183,23 @@ export const AuthProvider = ({ children }) => {
   const changePassword = async (currentPassword, newPassword) => {
     setLoading(true);
     try {
+      const idLower = (user?.email || '').toLowerCase().trim();
+      const savedPasswords = JSON.parse(localStorage.getItem(PASSWORDS_KEY) || '{}');
+      const savedPass = savedPasswords[idLower];
+      
+      if (savedPass && currentPassword && savedPass !== currentPassword) {
+        throw new Error('Current password is incorrect. Please verify your current password.');
+      }
+
       try {
         await api.changePassword(currentPassword, newPassword);
       } catch (apiErr) {
         console.warn('Backend API changePassword unavailable, handled locally:', apiErr.message);
+      }
+
+      if (idLower) {
+        savedPasswords[idLower] = newPassword;
+        localStorage.setItem(PASSWORDS_KEY, JSON.stringify(savedPasswords));
       }
       return true;
     } finally {

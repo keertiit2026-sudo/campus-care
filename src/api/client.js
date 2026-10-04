@@ -313,7 +313,7 @@ export const api = {
     });
     const json = await res.json();
     if (!res.ok) throw new Error(json.error || 'Failed to fetch intelligence alerts');
-    return json.alerts || [];
+    return json.alerts || json.data || [];
   },
 
   async getRecurringProblems(params = {}) {
@@ -323,7 +323,7 @@ export const api = {
     });
     const json = await res.json();
     if (!res.ok) throw new Error(json.error || 'Failed to fetch recurring problems');
-    return json.recurringProblems || [];
+    return json.recurringProblems || json.data || json.recurring || [];
   },
 
   async getSimilarComplaints(id) {

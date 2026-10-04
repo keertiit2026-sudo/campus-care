@@ -306,6 +306,8 @@ export const ProfilePage = () => {
 
   const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'tickets' | 'security'
   const [isEditing, setIsEditing] = useState(false);
+  const [isEditingCredentials, setIsEditingCredentials] = useState(false);
+  const [savingCredentials, setSavingCredentials] = useState(false);
   const [saving, setSaving] = useState(false);
   const [copiedId, setCopiedId] = useState(false);
 
@@ -845,6 +847,40 @@ export const ProfilePage = () => {
       });
     } finally {
       setSaving(false);
+    }
+  };
+
+  // Save Campus Credentials (Admin only)
+  const handleSaveCredentials = async (e) => {
+    if (e) e.preventDefault();
+    setSavingCredentials(true);
+    try {
+      await updateProfile({
+        enrollmentStatus: formData.enrollmentStatus,
+        portalRole: formData.portalRole,
+        registeredBatch: formData.registeredBatch,
+        slaTier: formData.slaTier,
+        role: formData.portalRole
+      });
+
+      try {
+        confetti({ particleCount: 40, spread: 50, origin: { y: 0.6 } });
+      } catch (err) {}
+
+      addToast({
+        type: 'success',
+        title: 'Credentials Updated 🛡️✨',
+        message: 'Campus credentials and SLA tier have been saved.'
+      });
+      setIsEditingCredentials(false);
+    } catch (err) {
+      addToast({
+        type: 'error',
+        title: 'Save Failed',
+        message: err.message || 'Could not update campus credentials.'
+      });
+    } finally {
+      setSavingCredentials(false);
     }
   };
 
@@ -1664,46 +1700,64 @@ export const ProfilePage = () => {
           {/* Right Sidebar Details */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             
-            {/* Campus Credentials Card (Fully Editable in Edit Mode) */}
-            <div className="glass-panel" style={{ padding: '20px', borderRadius: '20px', background: 'linear-gradient(180deg, #ffffff 0%, #FFF5F9 100%)' }}>
+            {/* Campus Credentials Card (Governed by Campus Admin) */}
+            <div className="glass-panel" style={{ padding: '20px', borderRadius: '20px', background: 'linear-gradient(180deg, #ffffff 0%, #FFF5F9 100%)', border: '1px solid rgba(236, 72, 153, 0.2)' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <div style={{ width: '36px', height: '36px', borderRadius: '10px', backgroundColor: 'rgba(236, 72, 153, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#EC4899' }}>
                     <ShieldCheck size={20} />
                   </div>
                   <div>
-                    <h4 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#1E1B4B', margin: 0 }}>
-                      Campus Credentials
+                    <h4 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#1E1B4B', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span>Campus Credentials</span>
                     </h4>
                     <p style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', margin: 0 }}>
-                      Official ID & Verification
+                      Official Institutional Verification
                     </p>
                   </div>
                 </div>
 
-                {!isEditing && (
-                  <button
-                    type="button"
-                    onClick={() => setIsEditing(true)}
-                    style={{ background: 'none', border: 'none', color: '#EC4899', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
-                  >
-                    <Edit3 size={12} />
-                    <span>Edit</span>
-                  </button>
+                {/* Right Header Action: Strictly NO edit button for students; Admins get dedicated Edit toggle */}
+                {isAdmin ? (
+                  isEditingCredentials ? (
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingCredentials(false)}
+                      style={{ background: 'none', border: 'none', color: '#6B7280', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                    >
+                      <X size={13} />
+                      <span>Cancel</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingCredentials(true)}
+                      className="btn btn-secondary btn-sm"
+                      style={{ padding: '4px 10px', fontSize: '0.75rem', gap: '5px', borderRadius: '8px' }}
+                    >
+                      <Edit3 size={13} color="#EC4899" />
+                      <span>Edit Credentials</span>
+                    </button>
+                  )
+                ) : (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '0.7rem', fontWeight: 700, color: '#10B981', backgroundColor: 'rgba(16, 185, 129, 0.1)', padding: '3px 10px', borderRadius: '12px' }}>
+                    <Lock size={11} />
+                    <span>Admin Verified</span>
+                  </span>
                 )}
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '0.825rem' }}>
                 
                 {/* 1. Enrollment / Duty Status */}
-                <div style={{ paddingBottom: '8px', borderBottom: '1px solid rgba(249, 168, 212, 0.4)' }}>
-                  <span style={{ color: 'var(--text-secondary)', display: 'block', marginBottom: '4px', fontSize: '0.75rem', fontWeight: 600 }}>Status:</span>
-                  {isEditing ? (
+                <div style={{ paddingBottom: '8px', borderBottom: '1px solid rgba(249, 168, 212, 0.4)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', fontWeight: 600 }}>Status:</span>
+                  {isAdmin && isEditingCredentials ? (
                     <select
                       className="input-control"
                       value={formData.enrollmentStatus}
                       onChange={(e) => setFormData({ ...formData, enrollmentStatus: e.target.value })}
-                      style={{ padding: '4px 8px', fontSize: '0.8rem' }}
+                      style={{ padding: '4px 8px', fontSize: '0.8rem', width: '60%' }}
                     >
                       <option value="Enrolled & Verified">Enrolled & Verified</option>
                       <option value="Active Faculty / Staff">Active Faculty / Staff</option>
@@ -1712,57 +1766,66 @@ export const ProfilePage = () => {
                       <option value="Research Fellow">Research Fellow</option>
                       <option value="Exchange Student">Exchange Student</option>
                       <option value="Staff on Duty">Staff on Duty</option>
+                      <option value="Suspended / On Leave">Suspended / On Leave</option>
+                      <option value="Graduated / Alumnus">Graduated / Alumnus</option>
                     </select>
                   ) : (
-                    <span style={{ fontWeight: 700, color: '#10B981' }}>{formData.enrollmentStatus}</span>
+                    <span style={{ fontWeight: 700, color: '#059669', display: 'inline-flex', alignItems: 'center', gap: '4px', backgroundColor: '#ECFDF5', padding: '2px 8px', borderRadius: '6px', fontSize: '0.78rem' }}>
+                      <CheckCircle2 size={12} />
+                      {formData.enrollmentStatus || 'Enrolled & Verified'}
+                    </span>
                   )}
                 </div>
 
                 {/* 2. Portal Role */}
-                <div style={{ paddingBottom: '8px', borderBottom: '1px solid rgba(249, 168, 212, 0.4)' }}>
-                  <span style={{ color: 'var(--text-secondary)', display: 'block', marginBottom: '4px', fontSize: '0.75rem', fontWeight: 600 }}>Portal Role:</span>
-                  {isEditing ? (
+                <div style={{ paddingBottom: '8px', borderBottom: '1px solid rgba(249, 168, 212, 0.4)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', fontWeight: 600 }}>Portal Role:</span>
+                  {isAdmin && isEditingCredentials ? (
                     <select
                       className="input-control"
                       value={formData.portalRole}
                       onChange={(e) => setFormData({ ...formData, portalRole: e.target.value })}
-                      style={{ padding: '4px 8px', fontSize: '0.8rem' }}
+                      style={{ padding: '4px 8px', fontSize: '0.8rem', width: '60%' }}
                     >
                       <option value="student">Student</option>
                       <option value="staff">Staff Officer</option>
                       <option value="admin">Campus Admin</option>
                     </select>
                   ) : (
-                    <span style={{ fontWeight: 700, color: '#EC4899', textTransform: 'capitalize' }}>{formData.portalRole}</span>
+                    <span style={{ fontWeight: 700, color: '#DB2777', textTransform: 'capitalize', backgroundColor: 'rgba(236, 72, 153, 0.1)', padding: '2px 8px', borderRadius: '6px', fontSize: '0.78rem' }}>
+                      {formData.portalRole || (isStaff ? 'Staff Officer' : isAdmin ? 'Campus Admin' : 'Student')}
+                    </span>
                   )}
                 </div>
 
                 {/* 3. Registered Batch / Year Range */}
-                <div style={{ paddingBottom: '8px', borderBottom: '1px solid rgba(249, 168, 212, 0.4)' }}>
-                  <span style={{ color: 'var(--text-secondary)', display: 'block', marginBottom: '4px', fontSize: '0.75rem', fontWeight: 600 }}>Registered Period / Batch:</span>
-                  {isEditing ? (
+                <div style={{ paddingBottom: '8px', borderBottom: '1px solid rgba(249, 168, 212, 0.4)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', fontWeight: 600 }}>Registered Period / Batch:</span>
+                  {isAdmin && isEditingCredentials ? (
                     <input
                       type="text"
                       className="input-control"
-                      placeholder="e.g. Academic Year 2024–2028 or Appointed 2024"
+                      placeholder="e.g. Academic Year 2024–2028"
                       value={formData.registeredBatch}
                       onChange={(e) => setFormData({ ...formData, registeredBatch: e.target.value })}
-                      style={{ padding: '4px 8px', fontSize: '0.8rem' }}
+                      style={{ padding: '4px 8px', fontSize: '0.8rem', width: '60%' }}
                     />
                   ) : (
-                    <span style={{ fontWeight: 600, color: '#1E1B4B' }}>{formData.registeredBatch}</span>
+                    <span style={{ fontWeight: 700, color: '#1E1B4B', fontSize: '0.78rem' }}>
+                      {formData.registeredBatch || 'Academic Year 2024–2028'}
+                    </span>
                   )}
                 </div>
 
                 {/* 4. SLA Priority Tier */}
-                <div>
-                  <span style={{ color: 'var(--text-secondary)', display: 'block', marginBottom: '4px', fontSize: '0.75rem', fontWeight: 600 }}>SLA Service Priority:</span>
-                  {isEditing ? (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', fontWeight: 600 }}>SLA Service Priority:</span>
+                  {isAdmin && isEditingCredentials ? (
                     <select
                       className="input-control"
                       value={formData.slaTier}
                       onChange={(e) => setFormData({ ...formData, slaTier: e.target.value })}
-                      style={{ padding: '4px 8px', fontSize: '0.8rem' }}
+                      style={{ padding: '4px 8px', fontSize: '0.8rem', width: '60%' }}
                     >
                       <option value="Standard Tier (24h)">Standard Tier (24h)</option>
                       <option value="Priority Tier (12h)">Priority Tier (12h)</option>
@@ -1771,9 +1834,45 @@ export const ProfilePage = () => {
                       <option value="Admin Escalation Authority">Admin Escalation Authority</option>
                     </select>
                   ) : (
-                    <span style={{ fontWeight: 700, color: '#8B5CF6' }}>{formData.slaTier}</span>
+                    <span style={{ fontWeight: 700, color: '#7C3AED', backgroundColor: 'rgba(139, 92, 246, 0.1)', padding: '2px 8px', borderRadius: '6px', fontSize: '0.78rem' }}>
+                      {formData.slaTier || 'Standard Tier (24h)'}
+                    </span>
                   )}
                 </div>
+
+                {/* Admin Action Buttons when Editing Credentials */}
+                {isAdmin && isEditingCredentials && (
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '10px', paddingTop: '10px', borderTop: '1px solid rgba(236, 72, 153, 0.2)' }}>
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingCredentials(false)}
+                      className="btn btn-secondary btn-sm"
+                      style={{ fontSize: '0.75rem', padding: '5px 12px' }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSaveCredentials}
+                      disabled={savingCredentials}
+                      className="btn btn-primary btn-sm"
+                      style={{ fontSize: '0.75rem', padding: '5px 14px', gap: '5px' }}
+                    >
+                      <Save size={13} />
+                      <span>{savingCredentials ? 'Saving...' : 'Save Credentials'}</span>
+                    </button>
+                  </div>
+                )}
+
+                {/* Institutional Note for Students */}
+                {!isAdmin && (
+                  <div style={{ marginTop: '6px', padding: '8px 10px', borderRadius: '8px', backgroundColor: 'rgba(236, 72, 153, 0.05)', border: '1px dashed rgba(236, 72, 153, 0.25)', display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
+                    <ShieldCheck size={14} color="#EC4899" style={{ flexShrink: 0, marginTop: '2px' }} />
+                    <span style={{ fontSize: '0.7rem', color: '#6B7280', lineHeight: 1.35 }}>
+                      Official institutional records issued by the <strong>Registrar & Campus Administration</strong>. Non-editable by student accounts.
+                    </span>
+                  </div>
+                )}
 
               </div>
             </div>
