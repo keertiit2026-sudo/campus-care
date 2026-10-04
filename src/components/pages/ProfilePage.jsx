@@ -38,7 +38,11 @@ import {
   Clipboard,
   AlertTriangle,
   Globe,
-  Loader2
+  Loader2,
+  Trash2,
+  UserMinus,
+  UserPlus,
+  Archive
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -295,12 +299,13 @@ export const ProfilePage = () => {
   const { 
     complaints = [], 
     addToast, 
-    openModal 
+    openModal,
+    currentPersona 
   } = useApp();
 
   // Role detection: Staff / Admin vs Student
-  const isAdmin = user?.role === 'admin' || (user?.email && user.email.toLowerCase().includes('admin'));
-  const isStaff = (user?.role === 'staff' || (user?.email && (user.email.toLowerCase().includes('staff') || user.email.toLowerCase().includes('alex') || user.email.toLowerCase().includes('devin')))) && !isAdmin;
+  const isAdmin = user?.role === 'admin' || currentPersona?.role === 'admin' || (user?.email && user.email.toLowerCase().includes('admin'));
+  const isStaff = (user?.role === 'staff' || currentPersona?.role === 'staff' || (user?.email && (user.email.toLowerCase().includes('staff') || user.email.toLowerCase().includes('alex') || user.email.toLowerCase().includes('devin')))) && !isAdmin;
   const isStaffOrAdmin = isAdmin || isStaff;
   const isStudent = !isStaffOrAdmin;
 
@@ -352,6 +357,235 @@ export const ProfilePage = () => {
   });
   const [passwordStatus, setPasswordStatus] = useState({ loading: false, error: '', success: '' });
 
+  // Student Registry State (Admin only - manage all students' credentials)
+  const [studentRegistry, setStudentRegistry] = useState(() => {
+    const saved = localStorage.getItem('campuscare_student_registry_v1');
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) {}
+    }
+    return [
+      {
+        id: 'usr_student_1',
+        name: 'Priya Sharma',
+        email: 'priya.sharma@college.edu',
+        studentId: 'STU-2024-8841',
+        department: 'Computer Science & Engineering',
+        year: '3rd Year (Semester 5)',
+        hostel: 'Gargi Hall, Room 314',
+        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+        enrollmentStatus: 'Enrolled & Verified',
+        portalRole: 'student',
+        registeredBatch: 'Academic Year 2024–2028',
+        slaTier: 'Standard Tier (24h)'
+      },
+      {
+        id: 'usr_student_2',
+        name: 'Rahul Verma',
+        email: 'rahul.verma@campuscare.edu',
+        studentId: 'STU-2024-9102',
+        department: 'Mechanical Engineering',
+        year: '2nd Year (Semester 3)',
+        hostel: 'Aryabhatta Hostel, Room 108',
+        avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80',
+        enrollmentStatus: 'Enrolled & Verified',
+        portalRole: 'student',
+        registeredBatch: 'Academic Year 2024–2028',
+        slaTier: 'Standard Tier (24h)'
+      },
+      {
+        id: 'usr_stu_1790044542789',
+        name: 'kerti',
+        email: 'jcer@2026',
+        studentId: 'cs2025035',
+        department: 'Computer Science & Engineering',
+        year: '1st Year',
+        hostel: 'Day Scholar',
+        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=kerti',
+        enrollmentStatus: 'Enrolled & Verified',
+        portalRole: 'student',
+        registeredBatch: 'Academic Year 2025–2029',
+        slaTier: 'Standard Tier (24h)'
+      },
+      {
+        id: 'usr_stu_1789998395896',
+        name: 'Test Student',
+        email: 'test.student@college.edu',
+        studentId: 'STU-2026-9999',
+        department: 'Computer Science',
+        year: '2nd Year',
+        hostel: 'Block A',
+        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Test%20Student',
+        enrollmentStatus: 'Enrolled & Verified',
+        portalRole: 'student',
+        registeredBatch: 'Academic Year 2024–2028',
+        slaTier: 'Standard Tier (24h)'
+      }
+    ];
+  });
+
+  const [selectedStudentForEdit, setSelectedStudentForEdit] = useState(null);
+  const [editingStudentData, setEditingStudentData] = useState(null);
+  const [studentSearchTerm, setStudentSearchTerm] = useState('');
+  const [studentStatusFilter, setStudentStatusFilter] = useState('all');
+
+  const handleOpenEditStudentModal = (student) => {
+    setSelectedStudentForEdit(student);
+    setEditingStudentData({
+      ...student,
+      enrollmentStatus: student.enrollmentStatus || 'Enrolled & Verified',
+      portalRole: student.portalRole || 'student',
+      registeredBatch: student.registeredBatch || 'Academic Year 2024–2028',
+      slaTier: student.slaTier || 'Standard Tier (24h)',
+      department: student.department || 'Computer Science & Engineering',
+      year: student.year || '3rd Year (Semester 5)'
+    });
+  };
+
+  const handleSaveStudentCredentials = () => {
+    if (!editingStudentData || !selectedStudentForEdit) return;
+
+    setStudentRegistry(prev => {
+      const updated = prev.map(s => s.id === selectedStudentForEdit.id ? { ...s, ...editingStudentData } : s);
+      localStorage.setItem('campuscare_student_registry_v1', JSON.stringify(updated));
+      return updated;
+    });
+
+    if (user?.id === selectedStudentForEdit.id || user?.studentId === selectedStudentForEdit.studentId || user?.email === selectedStudentForEdit.email) {
+      updateProfile({
+        enrollmentStatus: editingStudentData.enrollmentStatus,
+        portalRole: editingStudentData.portalRole,
+        registeredBatch: editingStudentData.registeredBatch,
+        slaTier: editingStudentData.slaTier,
+        department: editingStudentData.department,
+        year: editingStudentData.year
+      });
+    }
+
+    try {
+      confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } });
+    } catch (e) {}
+
+    addToast({
+      type: 'success',
+      title: 'Student Credentials Updated 🛡️✨',
+      message: `Updated institutional credentials for ${selectedStudentForEdit.name}.`
+    });
+
+    setSelectedStudentForEdit(null);
+    setEditingStudentData(null);
+  };
+
+  // Student Lifecycle Management States
+  const [studentToDelete, setStudentToDelete] = useState(null);
+  const [showAddStudentModal, setShowAddStudentModal] = useState(false);
+  const [newStudentFormData, setNewStudentFormData] = useState({
+    name: '',
+    email: '',
+    studentId: '',
+    department: 'Computer Science & Engineering',
+    year: '1st Year (Semester 1)',
+    hostel: 'Gargi Hall',
+    registeredBatch: 'Academic Year 2025–2029',
+    slaTier: 'Standard Tier (24h)',
+    enrollmentStatus: 'Enrolled & Verified',
+    portalRole: 'student'
+  });
+
+  const handleGraduateStudent = (student) => {
+    if (!student) return;
+    const isAlreadyGraduated = (student.enrollmentStatus || '').includes('Graduated') || (student.enrollmentStatus || '').includes('Alumnus');
+    const newStatus = isAlreadyGraduated ? 'Enrolled & Verified' : 'Graduated / Alumnus';
+
+    setStudentRegistry(prev => {
+      const updated = prev.map(s => s.id === student.id ? { ...s, enrollmentStatus: newStatus } : s);
+      localStorage.setItem('campuscare_student_registry_v1', JSON.stringify(updated));
+      return updated;
+    });
+
+    if (user?.id === student.id || user?.studentId === student.studentId || user?.email === student.email) {
+      updateProfile({ enrollmentStatus: newStatus });
+    }
+
+    try {
+      confetti({ particleCount: 60, spread: 70, origin: { y: 0.6 } });
+    } catch (e) {}
+
+    addToast({
+      type: 'success',
+      title: isAlreadyGraduated ? 'Student Reactivated 🎓' : 'Student Marked as Graduated Alumnus 🎓🎉',
+      message: `${student.name} is now marked as "${newStatus}". Historical tickets are preserved.`
+    });
+  };
+
+  const handleDeleteStudentConfirm = () => {
+    if (!studentToDelete) return;
+    setStudentRegistry(prev => {
+      const updated = prev.filter(s => s.id !== studentToDelete.id);
+      localStorage.setItem('campuscare_student_registry_v1', JSON.stringify(updated));
+      return updated;
+    });
+
+    addToast({
+      type: 'info',
+      title: 'Student Record Removed 🗑️',
+      message: `${studentToDelete.name} (${studentToDelete.studentId}) was removed from the active campus registry.`
+    });
+
+    setStudentToDelete(null);
+    if (selectedStudentForEdit?.id === studentToDelete.id) {
+      setSelectedStudentForEdit(null);
+      setEditingStudentData(null);
+    }
+  };
+
+  const handleRegisterNewStudent = (e) => {
+    e?.preventDefault();
+    if (!newStudentFormData.name.trim() || !newStudentFormData.studentId.trim()) {
+      addToast({ type: 'warning', title: 'Missing Information', message: 'Please provide at least a Student Name and Student ID.' });
+      return;
+    }
+
+    const newId = `usr_stu_${Date.now()}`;
+    const newStudent = {
+      ...newStudentFormData,
+      id: newId,
+      name: newStudentFormData.name.trim(),
+      studentId: newStudentFormData.studentId.trim(),
+      email: newStudentFormData.email.trim() || `${newStudentFormData.name.toLowerCase().replace(/\s+/g, '.')}@college.edu`,
+      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(newStudentFormData.name.trim())}`
+    };
+
+    setStudentRegistry(prev => {
+      const updated = [newStudent, ...prev];
+      localStorage.setItem('campuscare_student_registry_v1', JSON.stringify(updated));
+      return updated;
+    });
+
+    try {
+      confetti({ particleCount: 60, spread: 70, origin: { y: 0.6 } });
+    } catch (e) {}
+
+    addToast({
+      type: 'success',
+      title: 'New Student Registered 🎓✨',
+      message: `Successfully enrolled ${newStudent.name} into ${newStudent.department}.`
+    });
+
+    setShowAddStudentModal(false);
+    setNewStudentFormData({
+      name: '',
+      email: '',
+      studentId: '',
+      department: 'Computer Science & Engineering',
+      year: '1st Year (Semester 1)',
+      hostel: 'Gargi Hall',
+      registeredBatch: 'Academic Year 2025–2029',
+      slaTier: 'Standard Tier (24h)',
+      enrollmentStatus: 'Enrolled & Verified',
+      portalRole: 'student'
+    });
+  };
+
   // Notification Preferences
   const [notifications, setNotifPreferences] = useState({
     emailUpdates: true,
@@ -364,38 +598,55 @@ export const ProfilePage = () => {
   const [ticketFilter, setTicketFilter] = useState('all'); // 'all' | 'active' | 'resolved'
   const [ticketSearch, setTicketSearch] = useState('');
 
-  // Sync form data with current user
+  // Sync form data with current user and Admin Student Registry
   useEffect(() => {
     if (user) {
       const userIsAdmin = user.role === 'admin' || (user.email && user.email.toLowerCase().includes('admin'));
       const userIsStaff = (user.role === 'staff' || (user.email && (user.email.toLowerCase().includes('staff') || user.email.toLowerCase().includes('alex') || user.email.toLowerCase().includes('devin')))) && !userIsAdmin;
       const userIsStaffOrAdmin = userIsAdmin || userIsStaff;
+
+      // Check if Admin made any updates in the official Student Registry
+      let registryStudent = null;
+      if (!userIsStaffOrAdmin) {
+        try {
+          const savedRegistry = localStorage.getItem('campuscare_student_registry_v1');
+          if (savedRegistry) {
+            const list = JSON.parse(savedRegistry);
+            registryStudent = list.find(s => 
+              (user.id && s.id === user.id) || 
+              (user.studentId && s.studentId === user.studentId) ||
+              (user.email && s.email?.toLowerCase() === user.email?.toLowerCase()) ||
+              (user.name && s.name?.toLowerCase() === user.name?.toLowerCase())
+            );
+          }
+        } catch (e) {}
+      }
       
       const defaultAvatar = userIsAdmin
         ? 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200&auto=format&fit=crop&q=80'
         : userIsStaff
           ? 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80'
-          : `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(user.name || 'Priya')}`;
+          : (registryStudent?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(user.name || 'Priya')}`);
 
       setFormData(prev => ({
         ...prev,
-        name: user.name || (userIsAdmin ? 'Dean Sarah Jenkins' : userIsStaff ? 'Devin Thorne' : 'Priya Sharma'),
-        email: user.email || (userIsAdmin ? 'admin@college.edu' : userIsStaff ? 'devin.thorne@college.edu' : 'priya.sharma@college.edu'),
+        name: registryStudent?.name || user.name || (userIsAdmin ? 'Dean Sarah Jenkins' : userIsStaff ? 'Devin Thorne' : 'Priya Sharma'),
+        email: registryStudent?.email || user.email || (userIsAdmin ? 'admin@college.edu' : userIsStaff ? 'devin.thorne@college.edu' : 'priya.sharma@college.edu'),
         phone: user.phone || prev.phone || '+91 98765 43210',
-        studentId: user.studentId || (userIsStaffOrAdmin ? 'EMP-2024-1042' : 'STU-2024-8841'),
-        department: user.department || (userIsAdmin ? 'Campus Administration' : userIsStaff ? 'IT Services & Network Infrastructure' : 'Computer Science & Engineering'),
-        year: user.year || (userIsStaffOrAdmin ? 'Executive Faculty' : '3rd Year (Semester 5)'),
+        studentId: registryStudent?.studentId || user.studentId || (userIsStaffOrAdmin ? 'EMP-2024-1042' : 'STU-2024-8841'),
+        department: registryStudent?.department || user.department || (userIsAdmin ? 'Campus Administration' : userIsStaff ? 'IT Services & Network Infrastructure' : 'Computer Science & Engineering'),
+        year: registryStudent?.year || user.year || (userIsStaffOrAdmin ? 'Executive Faculty' : '3rd Year (Semester 5)'),
         hostel: user.hostel || (userIsStaffOrAdmin ? 'Campus Staff Residence A-4' : 'Gargi Hall, Room 314'),
         designation: user.designation || user.roleTitle || (userIsAdmin ? 'Dean of Campus Infrastructure & Student Welfare' : userIsStaff ? 'Lead Systems Specialist' : 'Undergraduate Scholar'),
         bio: user.bio || (userIsStaffOrAdmin ? 'Dedicated campus administrator ensuring safe infrastructure and timely resolution of collegiate complaints.' : 'Passionate student advocating for a cleaner, smarter, and safer campus community.'),
         emergencyContact: user.emergencyContact || (userIsStaffOrAdmin ? 'Campus Helpdesk (+91 98450 11223)' : 'Dr. M. Sharma (+91 98765 11223)'),
-        avatar: user.avatar || prev.avatar || defaultAvatar,
-        enrollmentStatus: user.enrollmentStatus || (userIsStaffOrAdmin ? 'Active Faculty / Staff' : 'Enrolled & Verified'),
+        avatar: registryStudent?.avatar || user.avatar || prev.avatar || defaultAvatar,
+        enrollmentStatus: registryStudent?.enrollmentStatus || user.enrollmentStatus || (userIsStaffOrAdmin ? 'Active Faculty / Staff' : 'Enrolled & Verified'),
         portalRole: user.portalRole || user.role || (userIsAdmin ? 'admin' : userIsStaff ? 'staff' : 'student'),
-        registeredBatch: user.registeredBatch || (userIsStaffOrAdmin ? 'Appointed 2024' : 'Academic Year 2024–2028'),
-        slaTier: user.slaTier || (userIsStaffOrAdmin ? 'Admin Escalation Authority' : 'Standard Tier (24h)')
+        registeredBatch: registryStudent?.registeredBatch || user.registeredBatch || (userIsStaffOrAdmin ? 'Appointed 2024' : 'Academic Year 2024–2028'),
+        slaTier: registryStudent?.slaTier || user.slaTier || (userIsStaffOrAdmin ? 'Admin Escalation Authority' : 'Standard Tier (24h)')
       }));
-      setPreviewAvatar(user.avatar || defaultAvatar);
+      setPreviewAvatar(registryStudent?.avatar || user.avatar || defaultAvatar);
     }
   }, [user]);
 
@@ -808,12 +1059,12 @@ export const ProfilePage = () => {
     }
   };
 
-  // Save Profile Form
+  // Save Profile Form (Personal Details: Phone, Hostel, Bio, Contact, Photo)
   const handleSaveProfile = async (e) => {
     if (e) e.preventDefault();
     setSaving(true);
     try {
-      await updateProfile({
+      const payload = {
         name: formData.name,
         phone: formData.phone,
         department: formData.department,
@@ -822,12 +1073,18 @@ export const ProfilePage = () => {
         designation: formData.designation,
         bio: formData.bio,
         emergencyContact: formData.emergencyContact,
-        avatar: formData.avatar,
-        enrollmentStatus: formData.enrollmentStatus,
-        portalRole: formData.portalRole,
-        registeredBatch: formData.registeredBatch,
-        slaTier: formData.slaTier
-      });
+        avatar: formData.avatar
+      };
+
+      // Only Admin can include campus credentials in profile updates
+      if (isAdmin) {
+        payload.enrollmentStatus = formData.enrollmentStatus;
+        payload.portalRole = formData.portalRole;
+        payload.registeredBatch = formData.registeredBatch;
+        payload.slaTier = formData.slaTier;
+      }
+
+      await updateProfile(payload);
 
       try {
         confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } });
@@ -836,7 +1093,7 @@ export const ProfilePage = () => {
       addToast({
         type: 'success',
         title: 'Profile Updated ✨',
-        message: 'Your personal details and credentials have been saved.'
+        message: 'Your personal details have been saved.'
       });
       setIsEditing(false);
     } catch (err) {
@@ -856,6 +1113,8 @@ export const ProfilePage = () => {
     setSavingCredentials(true);
     try {
       await updateProfile({
+        studentId: formData.studentId,
+        department: formData.department,
         enrollmentStatus: formData.enrollmentStatus,
         portalRole: formData.portalRole,
         registeredBatch: formData.registeredBatch,
@@ -870,7 +1129,7 @@ export const ProfilePage = () => {
       addToast({
         type: 'success',
         title: 'Credentials Updated 🛡️✨',
-        message: 'Campus credentials and SLA tier have been saved.'
+        message: 'Campus credentials, institutional status, and SLA tier have been saved.'
       });
       setIsEditingCredentials(false);
     } catch (err) {
@@ -1368,6 +1627,44 @@ export const ProfilePage = () => {
           <span>{isStudent ? 'Profile & Academic Details' : 'Staff Profile & Records'}</span>
         </button>
 
+        {/* Tab 2 (Admins Only): Student Credentials Registry */}
+        {isAdmin && (
+          <button
+            type="button"
+            onClick={() => setActiveTab('students')}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '10px 18px',
+              border: 'none',
+              background: 'none',
+              fontSize: '0.9rem',
+              fontWeight: activeTab === 'students' ? 800 : 600,
+              color: activeTab === 'students' ? '#EC4899' : 'var(--text-secondary)',
+              borderBottom: activeTab === 'students' ? '3px solid #EC4899' : '3px solid transparent',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              borderRadius: '8px 8px 0 0'
+            }}
+          >
+            <GraduationCap size={17} />
+            <span>Student Credentials Registry</span>
+            <span
+              style={{
+                padding: '2px 8px',
+                borderRadius: '9999px',
+                fontSize: '0.72rem',
+                fontWeight: 800,
+                backgroundColor: activeTab === 'students' ? '#EC4899' : 'rgba(236, 72, 153, 0.1)',
+                color: activeTab === 'students' ? '#ffffff' : '#EC4899'
+              }}
+            >
+              {studentRegistry.length}
+            </span>
+          </button>
+        )}
+
         {/* Tab 2: ONLY for Students (Staff / Admin profile does not have personal ticket history) */}
         {isStudent && (
           <button
@@ -1533,7 +1830,6 @@ export const ProfilePage = () => {
                     value={formData.name}
                     disabled={!isEditing}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    required
                   />
                 </div>
 
@@ -1674,6 +1970,91 @@ export const ProfilePage = () => {
                 />
               </div>
 
+              {/* Integrated Campus Credentials Section for Admin inside Main Edit Form */}
+              {isAdmin && isEditing && (
+                <div style={{
+                  padding: '16px',
+                  borderRadius: '16px',
+                  backgroundColor: 'rgba(236, 72, 153, 0.04)',
+                  border: '1.5px solid rgba(236, 72, 153, 0.3)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '14px',
+                  marginTop: '6px'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <ShieldCheck size={18} color="#EC4899" />
+                    <span style={{ fontSize: '0.9rem', fontWeight: 800, color: '#1E1B4B' }}>
+                      Institutional Governance & Campus Credentials (Admin Authority)
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px' }}>
+                    {/* Status */}
+                    <div>
+                      <label className="input-label">Enrollment / Staff Status</label>
+                      <select
+                        className="input-control"
+                        value={formData.enrollmentStatus}
+                        onChange={(e) => setFormData({ ...formData, enrollmentStatus: e.target.value })}
+                      >
+                        <option value="Enrolled & Verified">Enrolled & Verified</option>
+                        <option value="Active Faculty / Staff">Active Faculty / Staff</option>
+                        <option value="Active Student">Active Student</option>
+                        <option value="Dean's Honor Scholar">Dean's Honor Scholar</option>
+                        <option value="Research Fellow">Research Fellow</option>
+                        <option value="Exchange Student">Exchange Student</option>
+                        <option value="Staff on Duty">Staff on Duty</option>
+                        <option value="Suspended / On Leave">Suspended / On Leave</option>
+                        <option value="Graduated / Alumnus">Graduated / Alumnus</option>
+                      </select>
+                    </div>
+
+                    {/* Portal Role */}
+                    <div>
+                      <label className="input-label">Portal Access Role</label>
+                      <select
+                        className="input-control"
+                        value={formData.portalRole}
+                        onChange={(e) => setFormData({ ...formData, portalRole: e.target.value })}
+                      >
+                        <option value="student">Student</option>
+                        <option value="staff">Staff Officer</option>
+                        <option value="admin">Campus Admin</option>
+                      </select>
+                    </div>
+
+                    {/* Batch / Period */}
+                    <div>
+                      <label className="input-label">Registered Period / Batch</label>
+                      <input
+                        type="text"
+                        className="input-control"
+                        placeholder="e.g. Academic Year 2024–2028"
+                        value={formData.registeredBatch}
+                        onChange={(e) => setFormData({ ...formData, registeredBatch: e.target.value })}
+                      />
+                    </div>
+
+                    {/* SLA Priority Tier */}
+                    <div>
+                      <label className="input-label">SLA Service Priority</label>
+                      <select
+                        className="input-control"
+                        value={formData.slaTier}
+                        onChange={(e) => setFormData({ ...formData, slaTier: e.target.value })}
+                      >
+                        <option value="Standard Tier (24h)">Standard Tier (24h)</option>
+                        <option value="Priority Tier (12h)">Priority Tier (12h)</option>
+                        <option value="Urgent Tier (6h)">Urgent Tier (6h)</option>
+                        <option value="VIP Student Welfare">VIP Student Welfare</option>
+                        <option value="Admin Escalation Authority">Admin Escalation Authority</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {isEditing && (
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '12px' }}>
                   <button
@@ -1690,7 +2071,7 @@ export const ProfilePage = () => {
                     disabled={saving}
                   >
                     <Save size={15} />
-                    <span>{saving ? 'Saving...' : 'Save Profile'}</span>
+                    <span>{saving ? 'Saving...' : 'Save Profile & Credentials'}</span>
                   </button>
                 </div>
               )}
@@ -1701,14 +2082,14 @@ export const ProfilePage = () => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             
             {/* Campus Credentials Card (Governed by Campus Admin) */}
-            <div className="glass-panel" style={{ padding: '20px', borderRadius: '20px', background: 'linear-gradient(180deg, #ffffff 0%, #FFF5F9 100%)', border: '1px solid rgba(236, 72, 153, 0.2)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+            <div className="glass-panel" style={{ padding: '22px', borderRadius: '20px', background: 'linear-gradient(180deg, #ffffff 0%, #FFF5F9 100%)', border: '1.5px solid rgba(236, 72, 153, 0.25)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <div style={{ width: '36px', height: '36px', borderRadius: '10px', backgroundColor: 'rgba(236, 72, 153, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#EC4899' }}>
+                  <div style={{ width: '38px', height: '38px', borderRadius: '12px', background: 'var(--primary-gradient)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff', boxShadow: '0 4px 12px rgba(236, 72, 153, 0.3)' }}>
                     <ShieldCheck size={20} />
                   </div>
                   <div>
-                    <h4 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#1E1B4B', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <h4 style={{ fontSize: '1rem', fontWeight: 800, color: '#1E1B4B', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <span>Campus Credentials</span>
                     </h4>
                     <p style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', margin: 0 }}>
@@ -1723,29 +2104,38 @@ export const ProfilePage = () => {
                     <button
                       type="button"
                       onClick={() => setIsEditingCredentials(false)}
-                      style={{ background: 'none', border: 'none', color: '#6B7280', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                      className="btn btn-secondary btn-sm"
+                      style={{ padding: '5px 12px', fontSize: '0.78rem', gap: '4px' }}
                     >
-                      <X size={13} />
+                      <X size={14} />
                       <span>Cancel</span>
                     </button>
                   ) : (
                     <button
                       type="button"
                       onClick={() => setIsEditingCredentials(true)}
-                      className="btn btn-secondary btn-sm"
-                      style={{ padding: '4px 10px', fontSize: '0.75rem', gap: '5px', borderRadius: '8px' }}
+                      className="btn btn-primary btn-sm"
+                      style={{ padding: '6px 14px', fontSize: '0.8rem', gap: '6px', borderRadius: '10px', fontWeight: 700 }}
                     >
-                      <Edit3 size={13} color="#EC4899" />
+                      <Edit3 size={14} />
                       <span>Edit Credentials</span>
                     </button>
                   )
                 ) : (
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '0.7rem', fontWeight: 700, color: '#10B981', backgroundColor: 'rgba(16, 185, 129, 0.1)', padding: '3px 10px', borderRadius: '12px' }}>
-                    <Lock size={11} />
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '0.72rem', fontWeight: 700, color: '#10B981', backgroundColor: 'rgba(16, 185, 129, 0.1)', padding: '4px 12px', borderRadius: '12px', border: '1px solid rgba(16, 185, 129, 0.25)' }}>
+                    <Lock size={12} />
                     <span>Admin Verified</span>
                   </span>
                 )}
               </div>
+
+              {/* Admin Governance Notice */}
+              {isAdmin && !isEditingCredentials && (
+                <div style={{ padding: '8px 10px', borderRadius: '10px', backgroundColor: 'rgba(236, 72, 153, 0.08)', border: '1px dashed rgba(236, 72, 153, 0.3)', marginBottom: '12px', fontSize: '0.74rem', color: '#DB2777', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <ShieldCheck size={15} style={{ flexShrink: 0 }} />
+                  <span>Admin Authority: You can edit institutional status, role, batch & SLA tier below.</span>
+                </div>
+              )}
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '0.825rem' }}>
                 
@@ -1847,7 +2237,7 @@ export const ProfilePage = () => {
                       type="button"
                       onClick={() => setIsEditingCredentials(false)}
                       className="btn btn-secondary btn-sm"
-                      style={{ fontSize: '0.75rem', padding: '5px 12px' }}
+                      style={{ fontSize: '0.78rem', padding: '6px 14px' }}
                     >
                       Cancel
                     </button>
@@ -1856,10 +2246,34 @@ export const ProfilePage = () => {
                       onClick={handleSaveCredentials}
                       disabled={savingCredentials}
                       className="btn btn-primary btn-sm"
-                      style={{ fontSize: '0.75rem', padding: '5px 14px', gap: '5px' }}
+                      style={{ fontSize: '0.78rem', padding: '6px 16px', gap: '6px', fontWeight: 700 }}
                     >
-                      <Save size={13} />
+                      <Save size={14} />
                       <span>{savingCredentials ? 'Saving...' : 'Save Credentials'}</span>
+                    </button>
+                  </div>
+                )}
+
+                {/* Prominent Bottom Button for Admin when not in edit mode */}
+                {isAdmin && !isEditingCredentials && (
+                  <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid rgba(236, 72, 153, 0.2)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingCredentials(true)}
+                      className="btn btn-primary btn-sm"
+                      style={{ width: '100%', justifyContent: 'center', gap: '6px', padding: '8px 14px', fontSize: '0.825rem', fontWeight: 700, borderRadius: '10px' }}
+                    >
+                      <Edit3 size={15} />
+                      <span>Edit My Admin Credentials</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('students')}
+                      className="btn btn-secondary btn-sm"
+                      style={{ width: '100%', justifyContent: 'center', gap: '6px', padding: '8px 14px', fontSize: '0.825rem', fontWeight: 700, borderRadius: '10px', color: '#EC4899', backgroundColor: 'rgba(236, 72, 153, 0.08)' }}
+                    >
+                      <GraduationCap size={15} />
+                      <span>Manage All Students' Credentials →</span>
                     </button>
                   </div>
                 )}
@@ -1917,6 +2331,15 @@ export const ProfilePage = () => {
                   <>
                     <button
                       type="button"
+                      onClick={() => setActiveTab('students')}
+                      className="btn btn-secondary btn-sm"
+                      style={{ justifyContent: 'flex-start', width: '100%', gap: '8px', color: '#EC4899', backgroundColor: 'rgba(236, 72, 153, 0.08)', fontWeight: 700 }}
+                    >
+                      <GraduationCap size={15} color="#EC4899" />
+                      <span>Student Credentials Registry</span>
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => navigate('/complaints')}
                       className="btn btn-secondary btn-sm"
                       style={{ justifyContent: 'flex-start', width: '100%', gap: '8px' }}
@@ -1957,6 +2380,273 @@ export const ProfilePage = () => {
             </div>
 
           </div>
+        </div>
+      )}
+
+      {/* --- TAB (Admins Only): Campus Student Credentials Registry --- */}
+      {isAdmin && activeTab === 'students' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          
+          {/* Top Banner with Stats & Action */}
+          <div className="glass-panel" style={{
+            padding: '24px 28px',
+            borderRadius: '20px',
+            background: 'linear-gradient(135deg, rgba(236, 72, 153, 0.08) 0%, rgba(244, 114, 182, 0.03) 100%)',
+            border: '1.5px solid rgba(236, 72, 153, 0.3)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '16px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+              <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: 'var(--primary-gradient)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff', boxShadow: '0 6px 18px rgba(236, 72, 153, 0.3)' }}>
+                <GraduationCap size={24} />
+              </div>
+              <div>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#1E1B4B', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span>Student Credentials & Lifecycle Registry</span>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 800, padding: '2px 8px', borderRadius: '10px', backgroundColor: 'rgba(236, 72, 153, 0.15)', color: '#EC4899' }}>
+                    Admin Governance Authority
+                  </span>
+                </h3>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: '2px 0 0 0' }}>
+                  Manage institutional credentials, enroll incoming students, archive graduates, and manage campus rosters.
+                </p>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+              <div style={{ padding: '8px 14px', borderRadius: '12px', backgroundColor: '#ffffff', border: '1px solid var(--border-color)', textAlign: 'center' }}>
+                <div style={{ fontSize: '1.15rem', fontWeight: 800, color: '#1E1B4B' }}>{studentRegistry.length}</div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 700 }}>Total Roster</div>
+              </div>
+              <div style={{ padding: '8px 14px', borderRadius: '12px', backgroundColor: '#ffffff', border: '1px solid var(--border-color)', textAlign: 'center' }}>
+                <div style={{ fontSize: '1.15rem', fontWeight: 800, color: '#10B981' }}>
+                  {studentRegistry.filter(s => !(s.enrollmentStatus || '').includes('Graduated') && !(s.enrollmentStatus || '').includes('Suspended')).length}
+                </div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 700 }}>Active Enrolled</div>
+              </div>
+              <div style={{ padding: '8px 14px', borderRadius: '12px', backgroundColor: '#ffffff', border: '1px solid var(--border-color)', textAlign: 'center' }}>
+                <div style={{ fontSize: '1.15rem', fontWeight: 800, color: '#6366F1' }}>
+                  {studentRegistry.filter(s => (s.enrollmentStatus || '').includes('Graduated') || (s.enrollmentStatus || '').includes('Alumnus')).length}
+                </div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 700 }}>Graduated Alumni</div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowAddStudentModal(true)}
+                className="btn btn-primary"
+                style={{ gap: '8px', padding: '10px 18px', fontWeight: 700, borderRadius: '12px', boxShadow: '0 4px 14px rgba(236, 72, 153, 0.35)' }}
+              >
+                <UserPlus size={16} />
+                <span>Enroll New Student</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Search & Filter Bar */}
+          <div className="glass-panel" style={{ padding: '16px 20px', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: '260px' }}>
+              <input
+                type="text"
+                className="input-control"
+                placeholder="Search students by name, registration ID (e.g. STU-2024-8841), or department..."
+                value={studentSearchTerm}
+                onChange={(e) => setStudentSearchTerm(e.target.value)}
+                style={{ padding: '8px 14px', fontSize: '0.85rem' }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <select
+                className="input-control"
+                value={studentStatusFilter}
+                onChange={(e) => setStudentStatusFilter(e.target.value)}
+                style={{ padding: '8px 12px', fontSize: '0.8rem', width: 'auto' }}
+              >
+                <option value="all">All Enrollment Statuses ({studentRegistry.length})</option>
+                <option value="Enrolled & Verified">Enrolled & Verified</option>
+                <option value="Active Student">Active Student</option>
+                <option value="Dean's Honor Scholar">Dean's Honor Scholar</option>
+                <option value="Research Fellow">Research Fellow</option>
+                <option value="Graduated / Alumnus">Graduated / Alumnus (Archive)</option>
+                <option value="Suspended / On Leave">Suspended / On Leave</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Students List Grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '18px' }}>
+            {studentRegistry
+              .filter(stu => {
+                const matchSearch = !studentSearchTerm ||
+                  stu.name.toLowerCase().includes(studentSearchTerm.toLowerCase()) ||
+                  stu.studentId.toLowerCase().includes(studentSearchTerm.toLowerCase()) ||
+                  stu.department.toLowerCase().includes(studentSearchTerm.toLowerCase()) ||
+                  stu.email.toLowerCase().includes(studentSearchTerm.toLowerCase());
+                const matchStatus = studentStatusFilter === 'all' || stu.enrollmentStatus === studentStatusFilter;
+                return matchSearch && matchStatus;
+              })
+              .map((stu) => {
+                const isGraduated = (stu.enrollmentStatus || '').includes('Graduated') || (stu.enrollmentStatus || '').includes('Alumnus');
+                const isSuspended = (stu.enrollmentStatus || '').includes('Suspended');
+
+                return (
+                  <div
+                    key={stu.id}
+                    className="glass-panel"
+                    style={{
+                      padding: '22px',
+                      borderRadius: '20px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '14px',
+                      border: isGraduated ? '1.5px solid rgba(99, 102, 241, 0.3)' : '1.5px solid rgba(236, 72, 153, 0.2)',
+                      backgroundColor: isGraduated ? '#FAFAFF' : '#ffffff',
+                      boxShadow: '0 4px 15px rgba(0, 0, 0, 0.03)',
+                      position: 'relative'
+                    }}
+                  >
+                    {/* Header: Avatar, Name, ID, Status */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <img
+                          src={stu.avatar}
+                          alt={stu.name}
+                          style={{
+                            width: '48px',
+                            height: '48px',
+                            borderRadius: '14px',
+                            objectFit: 'cover',
+                            border: `2px solid ${isGraduated ? '#6366F1' : '#EC4899'}`,
+                            backgroundColor: '#ffffff'
+                          }}
+                          onError={(e) => {
+                            e.target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(stu.name)}`;
+                          }}
+                        />
+                        <div>
+                          <div style={{ fontWeight: 800, fontSize: '0.98rem', color: '#1E1B4B' }}>{stu.name}</div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{stu.studentId} • {stu.email}</div>
+                        </div>
+                      </div>
+
+                      <span style={{
+                        fontSize: '0.72rem',
+                        fontWeight: 700,
+                        padding: '4px 10px',
+                        borderRadius: '8px',
+                        backgroundColor: isGraduated
+                          ? 'rgba(99, 102, 241, 0.12)'
+                          : isSuspended
+                            ? 'rgba(239, 68, 68, 0.12)'
+                            : 'rgba(16, 185, 129, 0.12)',
+                        color: isGraduated
+                          ? '#4F46E5'
+                          : isSuspended
+                            ? '#EF4444'
+                            : '#059669',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        whiteSpace: 'nowrap'
+                      }}>
+                        {isGraduated ? <GraduationCap size={13} /> : <CheckCircle2 size={13} />}
+                        {stu.enrollmentStatus}
+                      </span>
+                    </div>
+
+                    {/* Academic & SLA Details */}
+                    <div style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '8px',
+                      padding: '12px 14px',
+                      borderRadius: '12px',
+                      backgroundColor: isGraduated ? '#EEF2FF' : '#FFF7FB',
+                      border: `1px solid ${isGraduated ? 'rgba(199, 210, 254, 0.6)' : 'rgba(249, 168, 212, 0.4)'}`,
+                      fontSize: '0.78rem'
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: 'var(--text-secondary)' }}>Department:</span>
+                        <strong style={{ color: '#1E1B4B' }}>{stu.department}</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: 'var(--text-secondary)' }}>Academic Standing:</span>
+                        <span style={{ color: '#1E1B4B', fontWeight: 600 }}>{stu.year}</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ color: 'var(--text-secondary)' }}>SLA Priority Tier:</span>
+                        <span style={{
+                          fontWeight: 700,
+                          color: isGraduated ? '#6366F1' : '#7C3AED',
+                          backgroundColor: isGraduated ? 'rgba(99, 102, 241, 0.12)' : 'rgba(139, 92, 246, 0.12)',
+                          padding: '2px 8px',
+                          borderRadius: '6px'
+                        }}>
+                          {stu.slaTier || 'Standard Tier (24h)'}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: 'var(--text-secondary)' }}>Registered Batch:</span>
+                        <span style={{ color: '#1E1B4B', fontWeight: 600 }}>{stu.registeredBatch || 'Academic Year 2024–2028'}</span>
+                      </div>
+                    </div>
+
+                    {/* Action Row */}
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '4px' }}>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEditStudentModal(stu)}
+                        className="btn btn-primary btn-sm"
+                        style={{ flex: 1, justifyContent: 'center', gap: '6px', padding: '9px 12px', fontSize: '0.825rem', fontWeight: 700, borderRadius: '10px' }}
+                      >
+                        <Edit3 size={14} />
+                        <span>Edit Credentials</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleGraduateStudent(stu)}
+                        className="btn btn-secondary btn-sm"
+                        title={isGraduated ? "Reactivate student to active roster" : "Mark student as Graduated Alumnus"}
+                        style={{
+                          padding: '9px 12px',
+                          fontSize: '0.8rem',
+                          fontWeight: 700,
+                          borderRadius: '10px',
+                          color: isGraduated ? '#10B981' : '#4F46E5',
+                          backgroundColor: isGraduated ? 'rgba(16, 185, 129, 0.08)' : 'rgba(99, 102, 241, 0.08)',
+                          borderColor: isGraduated ? 'rgba(16, 185, 129, 0.25)' : 'rgba(99, 102, 241, 0.25)',
+                          gap: '5px'
+                        }}
+                      >
+                        <GraduationCap size={15} />
+                        <span>{isGraduated ? 'Reactivate' : 'Graduate'}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setStudentToDelete(stu)}
+                        className="btn btn-ghost btn-sm"
+                        title="Remove / De-register student from campus"
+                        style={{
+                          padding: '9px',
+                          borderRadius: '10px',
+                          color: '#EF4444',
+                          backgroundColor: 'rgba(239, 68, 68, 0.06)'
+                        }}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+          </div>
+
         </div>
       )}
 
@@ -2920,6 +3610,551 @@ export const ProfilePage = () => {
               </div>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {/* --- MODAL (Admin Only): Edit Student Campus Credentials --- */}
+      {selectedStudentForEdit && editingStudentData && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.65)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1100,
+            padding: '20px'
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setSelectedStudentForEdit(null);
+              setEditingStudentData(null);
+            }
+          }}
+        >
+          <div
+            className="glass-panel"
+            style={{
+              width: '100%',
+              maxWidth: '560px',
+              backgroundColor: '#ffffff',
+              borderRadius: '24px',
+              padding: '28px',
+              boxShadow: '0 25px 50px -12px rgba(236, 72, 153, 0.25), 0 0 0 1px rgba(236, 72, 153, 0.15)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '20px',
+              maxHeight: '90vh',
+              overflowY: 'auto'
+            }}
+          >
+            {/* Modal Header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <img
+                  src={editingStudentData.avatar}
+                  alt={editingStudentData.name}
+                  style={{
+                    width: '46px',
+                    height: '46px',
+                    borderRadius: '14px',
+                    objectFit: 'cover',
+                    border: '2px solid #EC4899',
+                    backgroundColor: '#ffffff'
+                  }}
+                  onError={(e) => {
+                    e.target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(editingStudentData.name)}`;
+                  }}
+                />
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#1E1B4B', margin: 0 }}>
+                      Edit {editingStudentData.name}'s Credentials
+                    </h3>
+                  </div>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
+                    <span style={{ fontWeight: 700, color: '#EC4899' }}>{editingStudentData.studentId}</span>
+                    <span>•</span>
+                    <span>{editingStudentData.email}</span>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedStudentForEdit(null);
+                  setEditingStudentData(null);
+                }}
+                className="btn btn-ghost btn-sm"
+                style={{ padding: '6px', borderRadius: '10px' }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Admin Badge Banner */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              padding: '10px 14px',
+              backgroundColor: 'rgba(236, 72, 153, 0.08)',
+              borderRadius: '12px',
+              border: '1px solid rgba(236, 72, 153, 0.25)',
+              fontSize: '0.78rem',
+              color: '#831843'
+            }}>
+              <ShieldCheck size={18} color="#EC4899" style={{ flexShrink: 0 }} />
+              <div>
+                <strong>Institutional Governance Authority:</strong> Changes saved here directly update this student's official records, ticket SLA escalation thresholds, and profile badge.
+              </div>
+            </div>
+
+            {/* Form Fields */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              
+              {/* Enrollment Status */}
+              <div style={{ gridColumn: '1 / -1' }}>
+                <label className="input-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <CheckCircle2 size={14} color="#EC4899" />
+                  <span>Institutional Enrollment Status</span>
+                </label>
+                <select
+                  className="input-control"
+                  value={editingStudentData.enrollmentStatus}
+                  onChange={(e) => setEditingStudentData({ ...editingStudentData, enrollmentStatus: e.target.value })}
+                  style={{ fontWeight: 600 }}
+                >
+                  <option value="Enrolled & Verified">Enrolled & Verified (Standard)</option>
+                  <option value="Active Student">Active Student</option>
+                  <option value="Dean's Honor Scholar">Dean's Honor Scholar (Academic Distinction)</option>
+                  <option value="Research Fellow">Research Fellow</option>
+                  <option value="Suspended / On Leave">Suspended / On Leave</option>
+                  <option value="Graduated / Alumnus">Graduated / Alumnus</option>
+                </select>
+              </div>
+
+              {/* SLA Priority Tier */}
+              <div>
+                <label className="input-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Clock size={14} color="#EC4899" />
+                  <span>SLA Service Priority</span>
+                </label>
+                <select
+                  className="input-control"
+                  value={editingStudentData.slaTier}
+                  onChange={(e) => setEditingStudentData({ ...editingStudentData, slaTier: e.target.value })}
+                >
+                  <option value="Standard Tier (24h)">Standard Tier (24h)</option>
+                  <option value="Priority Tier (12h)">Priority Tier (12h)</option>
+                  <option value="Urgent Tier (6h)">Urgent Tier (6h)</option>
+                  <option value="VIP Student Welfare">VIP Student Welfare</option>
+                </select>
+              </div>
+
+              {/* Registered Batch */}
+              <div>
+                <label className="input-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Calendar size={14} color="#EC4899" />
+                  <span>Registered Batch / Period</span>
+                </label>
+                <input
+                  type="text"
+                  className="input-control"
+                  value={editingStudentData.registeredBatch}
+                  onChange={(e) => setEditingStudentData({ ...editingStudentData, registeredBatch: e.target.value })}
+                  placeholder="e.g. Academic Year 2024–2028"
+                />
+              </div>
+
+              {/* Department */}
+              <div>
+                <label className="input-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Building size={14} color="#EC4899" />
+                  <span>Department / Faculty</span>
+                </label>
+                <select
+                  className="input-control"
+                  value={editingStudentData.department}
+                  onChange={(e) => setEditingStudentData({ ...editingStudentData, department: e.target.value })}
+                >
+                  <option value="Computer Science & Engineering">Computer Science & Engineering</option>
+                  <option value="Information Technology">Information Technology</option>
+                  <option value="Mechanical Engineering">Mechanical Engineering</option>
+                  <option value="Electrical & Electronics">Electrical & Electronics</option>
+                  <option value="Civil Engineering">Civil Engineering</option>
+                  <option value="Business Administration">Business Administration</option>
+                </select>
+              </div>
+
+              {/* Academic Year */}
+              <div>
+                <label className="input-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <GraduationCap size={14} color="#EC4899" />
+                  <span>Academic Standing / Year</span>
+                </label>
+                <select
+                  className="input-control"
+                  value={editingStudentData.year}
+                  onChange={(e) => setEditingStudentData({ ...editingStudentData, year: e.target.value })}
+                >
+                  <option value="1st Year (Semester 1)">1st Year (Semester 1)</option>
+                  <option value="1st Year (Semester 2)">1st Year (Semester 2)</option>
+                  <option value="2nd Year (Semester 3)">2nd Year (Semester 3)</option>
+                  <option value="2nd Year (Semester 4)">2nd Year (Semester 4)</option>
+                  <option value="3rd Year (Semester 5)">3rd Year (Semester 5)</option>
+                  <option value="3rd Year (Semester 6)">3rd Year (Semester 6)</option>
+                  <option value="4th Year (Final Year)">4th Year (Final Year)</option>
+                  <option value="Post-Graduate / Scholar">Post-Graduate / Scholar</option>
+                </select>
+              </div>
+
+            </div>
+
+            {/* Modal Actions */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', paddingTop: '16px', borderTop: '1px solid var(--border-color)', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleGraduateStudent(selectedStudentForEdit);
+                    setSelectedStudentForEdit(null);
+                    setEditingStudentData(null);
+                  }}
+                  className="btn btn-secondary btn-sm"
+                  style={{ color: '#4F46E5', borderColor: 'rgba(99, 102, 241, 0.3)', gap: '6px' }}
+                >
+                  <GraduationCap size={14} />
+                  <span>Archive as Graduated</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStudentToDelete(selectedStudentForEdit);
+                  }}
+                  className="btn btn-ghost btn-sm"
+                  style={{ color: '#EF4444', backgroundColor: 'rgba(239, 68, 68, 0.08)', gap: '4px' }}
+                >
+                  <Trash2 size={14} />
+                  <span>Remove</span>
+                </button>
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedStudentForEdit(null);
+                    setEditingStudentData(null);
+                  }}
+                  className="btn btn-secondary"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveStudentCredentials}
+                  className="btn btn-primary"
+                  style={{ gap: '6px' }}
+                >
+                  <Save size={15} />
+                  <span>Save Credentials</span>
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* --- MODAL (Admin Only): Enroll / Register New Student --- */}
+      {showAddStudentModal && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.65)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1150,
+            padding: '20px'
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowAddStudentModal(false);
+          }}
+        >
+          <div
+            className="glass-panel"
+            style={{
+              width: '100%',
+              maxWidth: '560px',
+              backgroundColor: '#ffffff',
+              borderRadius: '24px',
+              padding: '28px',
+              boxShadow: '0 25px 50px -12px rgba(236, 72, 153, 0.25)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '20px',
+              maxHeight: '90vh',
+              overflowY: 'auto'
+            }}
+          >
+            {/* Modal Header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: 'var(--primary-gradient)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff' }}>
+                  <UserPlus size={20} />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#1E1B4B', margin: 0 }}>
+                    Enroll New Student
+                  </h3>
+                  <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: '2px 0 0 0' }}>
+                    Register a new student profile and issue official campus credentials
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAddStudentModal(false)}
+                className="btn btn-ghost btn-sm"
+                style={{ padding: '6px', borderRadius: '10px' }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleRegisterNewStudent} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                
+                {/* Full Name */}
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <label className="input-label">Student Full Name *</label>
+                  <input
+                    type="text"
+                    className="input-control"
+                    required
+                    placeholder="e.g. Aryan Malhotra"
+                    value={newStudentFormData.name}
+                    onChange={(e) => setNewStudentFormData({ ...newStudentFormData, name: e.target.value })}
+                  />
+                </div>
+
+                {/* Student ID */}
+                <div>
+                  <label className="input-label">Student Registration ID *</label>
+                  <input
+                    type="text"
+                    className="input-control"
+                    required
+                    placeholder="e.g. STU-2025-1089"
+                    value={newStudentFormData.studentId}
+                    onChange={(e) => setNewStudentFormData({ ...newStudentFormData, studentId: e.target.value })}
+                  />
+                </div>
+
+                {/* Email */}
+                <div>
+                  <label className="input-label">Campus Email</label>
+                  <input
+                    type="email"
+                    className="input-control"
+                    placeholder="e.g. aryan.m@college.edu"
+                    value={newStudentFormData.email}
+                    onChange={(e) => setNewStudentFormData({ ...newStudentFormData, email: e.target.value })}
+                  />
+                </div>
+
+                {/* Department */}
+                <div>
+                  <label className="input-label">Department / Faculty</label>
+                  <select
+                    className="input-control"
+                    value={newStudentFormData.department}
+                    onChange={(e) => setNewStudentFormData({ ...newStudentFormData, department: e.target.value })}
+                  >
+                    <option value="Computer Science & Engineering">Computer Science & Engineering</option>
+                    <option value="Information Technology">Information Technology</option>
+                    <option value="Mechanical Engineering">Mechanical Engineering</option>
+                    <option value="Electrical & Electronics">Electrical & Electronics</option>
+                    <option value="Civil Engineering">Civil Engineering</option>
+                    <option value="Business Administration">Business Administration</option>
+                  </select>
+                </div>
+
+                {/* Academic Year */}
+                <div>
+                  <label className="input-label">Academic Standing / Year</label>
+                  <select
+                    className="input-control"
+                    value={newStudentFormData.year}
+                    onChange={(e) => setNewStudentFormData({ ...newStudentFormData, year: e.target.value })}
+                  >
+                    <option value="1st Year (Semester 1)">1st Year (Semester 1)</option>
+                    <option value="1st Year (Semester 2)">1st Year (Semester 2)</option>
+                    <option value="2nd Year (Semester 3)">2nd Year (Semester 3)</option>
+                    <option value="2nd Year (Semester 4)">2nd Year (Semester 4)</option>
+                    <option value="3rd Year (Semester 5)">3rd Year (Semester 5)</option>
+                    <option value="4th Year (Final Year)">4th Year (Final Year)</option>
+                  </select>
+                </div>
+
+                {/* Registered Batch */}
+                <div>
+                  <label className="input-label">Registered Batch</label>
+                  <input
+                    type="text"
+                    className="input-control"
+                    placeholder="e.g. Academic Year 2025–2029"
+                    value={newStudentFormData.registeredBatch}
+                    onChange={(e) => setNewStudentFormData({ ...newStudentFormData, registeredBatch: e.target.value })}
+                  />
+                </div>
+
+                {/* SLA Priority */}
+                <div>
+                  <label className="input-label">SLA Priority Tier</label>
+                  <select
+                    className="input-control"
+                    value={newStudentFormData.slaTier}
+                    onChange={(e) => setNewStudentFormData({ ...newStudentFormData, slaTier: e.target.value })}
+                  >
+                    <option value="Standard Tier (24h)">Standard Tier (24h)</option>
+                    <option value="Priority Tier (12h)">Priority Tier (12h)</option>
+                    <option value="Urgent Tier (6h)">Urgent Tier (6h)</option>
+                    <option value="VIP Student Welfare">VIP Student Welfare</option>
+                  </select>
+                </div>
+
+              </div>
+
+              {/* Modal Actions */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', paddingTop: '16px', borderTop: '1px solid var(--border-color)', marginTop: '8px' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowAddStudentModal(false)}
+                  className="btn btn-secondary"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  style={{ gap: '6px' }}
+                >
+                  <UserPlus size={15} />
+                  <span>Register & Enroll Student</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* --- MODAL (Admin Only): Confirm Student Removal / Deletion --- */}
+      {studentToDelete && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.7)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1200,
+            padding: '20px'
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setStudentToDelete(null);
+          }}
+        >
+          <div
+            className="glass-panel"
+            style={{
+              width: '100%',
+              maxWidth: '480px',
+              backgroundColor: '#ffffff',
+              borderRadius: '24px',
+              padding: '28px',
+              boxShadow: '0 25px 50px -12px rgba(239, 68, 68, 0.3)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '18px'
+            }}
+          >
+            {/* Modal Header */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+              <div style={{ width: '46px', height: '46px', borderRadius: '14px', backgroundColor: 'rgba(239, 68, 68, 0.12)', color: '#EF4444', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <AlertTriangle size={24} />
+              </div>
+              <div>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#1E1B4B', margin: 0 }}>
+                  Remove Student from CampusCare?
+                </h3>
+                <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: '2px 0 0 0' }}>
+                  Institutional student de-registration confirmation
+                </p>
+              </div>
+            </div>
+
+            {/* Student Info preview */}
+            <div style={{ padding: '14px 16px', borderRadius: '14px', backgroundColor: '#FEF2F2', border: '1px solid rgba(254, 202, 202, 0.8)', display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <img
+                src={studentToDelete.avatar}
+                alt={studentToDelete.name}
+                style={{ width: '40px', height: '40px', borderRadius: '12px', objectFit: 'cover', border: '2px solid #EF4444' }}
+              />
+              <div>
+                <strong style={{ color: '#991B1B', fontSize: '0.92rem' }}>{studentToDelete.name}</strong>
+                <div style={{ fontSize: '0.75rem', color: '#B91C1C' }}>
+                  {studentToDelete.studentId} • {studentToDelete.department}
+                </div>
+              </div>
+            </div>
+
+            <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.5, margin: 0 }}>
+              Are you sure you want to completely remove <strong>{studentToDelete.name}</strong> from the campus database? If the student has simply completed their degree, you can choose to <strong>Mark as Graduated Alumnus</strong> instead to preserve their historical complaint archives.
+            </p>
+
+            {/* Modal Actions */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', paddingTop: '14px', borderTop: '1px solid var(--border-color)' }}>
+              <button
+                type="button"
+                onClick={() => setStudentToDelete(null)}
+                className="btn btn-secondary"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  handleGraduateStudent(studentToDelete);
+                  setStudentToDelete(null);
+                }}
+                className="btn btn-secondary"
+                style={{ color: '#4F46E5', borderColor: 'rgba(99, 102, 241, 0.3)', fontWeight: 700 }}
+              >
+                <GraduationCap size={15} />
+                <span>Archive as Graduated</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteStudentConfirm}
+                className="btn btn-primary"
+                style={{ backgroundColor: '#EF4444', borderColor: '#EF4444', gap: '6px' }}
+              >
+                <Trash2 size={15} />
+                <span>Remove Student</span>
+              </button>
+            </div>
           </div>
         </div>
       )}
