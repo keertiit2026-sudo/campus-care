@@ -265,7 +265,12 @@ export const Header = ({ onToggleSidebar }) => {
                 border: '1.5px solid #EC4899'
               }}
               onError={(e) => {
-                e.target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(userName || 'User')}`;
+                if (user?.avatar && !e.target.dataset.triedProxy && !user.avatar.startsWith('data:') && !user.avatar.includes('wsrv.nl')) {
+                  e.target.dataset.triedProxy = 'true';
+                  e.target.src = `https://wsrv.nl/?url=${encodeURIComponent(user.avatar)}&w=150&output=webp`;
+                } else {
+                  e.target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(userName || 'User')}`;
+                }
               }}
             />
             <div style={{ textAlign: 'left', lineHeight: 1.2 }}>

@@ -1,7 +1,7 @@
 import React from 'react';
 import { 
   Building, Layers, DoorOpen, AlignLeft, MapPin, 
-  CheckCircle2, Sparkles 
+  CheckCircle2 
 } from 'lucide-react';
 
 export const FLOOR_OPTIONS = [
@@ -101,52 +101,11 @@ export const CampusLocationForm = ({
         )}
       </div>
 
-      {/* 2. Quick Building Selection Chips */}
-      <div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
-          <Sparkles size={13} color="var(--primary-color)" />
-          <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-            Quick Campus Building Presets:
-          </span>
-        </div>
-        <div style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: '6px'
-        }}>
-          {POPULAR_BUILDINGS.map((b, idx) => {
-            const isSelected = buildingName === b;
-            return (
-              <button
-                key={idx}
-                type="button"
-                onClick={() => setBuildingName(isSelected ? '' : b)}
-                style={{
-                  padding: '5px 12px',
-                  borderRadius: '20px',
-                  fontSize: '0.78rem',
-                  fontWeight: isSelected ? 700 : 500,
-                  border: isSelected ? '1px solid var(--primary-color)' : '1px solid var(--border-color)',
-                  backgroundColor: isSelected ? 'rgba(236, 72, 153, 0.12)' : 'var(--bg-tertiary)',
-                  color: isSelected ? 'var(--primary-color)' : 'var(--text-secondary)',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease'
-                }}
-              >
-                {b}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* 3. Primary Location Fields Grid */}
+      {/* Primary Location Fields Grid */}
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-        gap: '14px',
-        paddingTop: '6px',
-        borderTop: '1px solid var(--border-color)'
+        gap: '14px'
       }}>
         {/* Building Name Input */}
         <div>

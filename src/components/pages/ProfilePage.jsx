@@ -44,62 +44,248 @@ import confetti from 'canvas-confetti';
 
 /**
  * Intelligent Image URL cleaner & resolver
- * Extracts real direct image URLs from Google Images redirects, Unsplash page URLs, GitHub profiles, and Imgur links.
+ * Extracts real direct image URLs from Google Images redirects, Unsplash, Pexels, Pixabay, Wikipedia/Wikimedia, GitHub, Imgur, Reddit, Giphy, and Pinterest.
  */
 export const cleanAndResolveImageUrl = (rawUrl) => {
   if (!rawUrl || typeof rawUrl !== 'string') return '';
   let cleaned = rawUrl.trim();
   
-  // Strip quotes or wrapper brackets
-  cleaned = cleaned.replace(/^["'<(]+|["'>)]+$/g, '');
+  // Strip wrapper quotes, backticks, brackets, parentheses
+  cleaned = cleaned.replace(/^["'`<(\[]+|["'`>)\]]+$/g, '').trim();
   
+  // If HTML img tag format: <img ... src="url" ...>
+  const htmlImgMatch = cleaned.match(/<img[^>]+src=["']([^"']+)["']/i);
+  if (htmlImgMatch) cleaned = htmlImgMatch[1].trim();
+
   // If markdown link format: ![title](url) or [title](url)
-  const mdMatch = cleaned.match(/\((https?:\/\/[^\s)]+)\)/);
-  if (mdMatch) cleaned = mdMatch[1];
+  const mdMatch = cleaned.match(/\((https?:\/\/[^\s)]+)\)/i);
+  if (mdMatch) cleaned = mdMatch[1].trim();
+
+  // If BBCode format: [img]url[/img]
+  const bbMatch = cleaned.match(/\[img\](.*?)\[\/img\]/i);
+  if (bbMatch) cleaned = bbMatch[1].trim();
+
+  // Replace HTML entity &amp; with & (critical for Reddit and image search URLs)
+  cleaned = cleaned.replace(/&amp;/g, '&');
+
+  // Handle data URLs directly
+  if (cleaned.startsWith('data:image/')) return cleaned;
+
+  // If protocol-relative url: //example.com/pic.jpg
+  if (cleaned.startsWith('//')) {
+    cleaned = 'https:' + cleaned;
+  }
+
+  // If user pasted bare domain or image path without protocol: e.g. images.unsplash.com/...
+  if (!cleaned.startsWith('http://') && !cleaned.startsWith('https://')) {
+    if (cleaned.includes('.') && !cleaned.includes(' ')) {
+      cleaned = 'https://' + cleaned;
+    }
+  }
 
   try {
     const parsed = new URL(cleaned);
     
     // 1. Google Images Search / Redirect URL handler
     // e.g. https://www.google.com/imgres?imgurl=https%3A%2F%2F...&tbnid=...
-    if (parsed.hostname.includes('google.') && (parsed.pathname.includes('/imgres') || parsed.pathname.includes('/url') || parsed.pathname.includes('/search'))) {
-      const imgParam = parsed.searchParams.get('imgurl') || parsed.searchParams.get('url') || parsed.searchParams.get('q');
-      if (imgParam && (imgParam.startsWith('http://') || imgParam.startsWith('https://'))) {
-        return decodeURIComponent(imgParam);
-      }
-    }
-    
-    // 2. Unsplash Page URL -> Direct Image URL
-    // e.g. https://unsplash.com/photos/a-woman-smiling-d1UPkiFd04A
-    if (parsed.hostname === 'unsplash.com' && parsed.pathname.startsWith('/photos/')) {
-      const parts = parsed.pathname.split('/').filter(Boolean);
-      const photoSlug = parts[parts.length - 1];
-      const match = photoSlug.match(/([a-zA-Z0-9_-]+)$/);
-      if (match) {
-        return `https://images.unsplash.com/photo-${match[1]}?w=400&auto=format&fit=crop&q=80`;
+    // e.g. https://www.google.com/url?sa=i&url=...
+    if (parsed.hostname.includes('google.')) {
+      const imgParam = parsed.searchParams.get('imgurl') || 
+                       parsed.searchParams.get('url') || 
+                       parsed.searchParams.get('q') ||
+                       parsed.searchParams.get('src');
+      if (imgParam && (imgParam.startsWith('http://') || imgParam.startsWith('https://') || imgParam.startsWith('data:image/'))) {
+        return cleanAndResolveImageUrl(decodeURIComponent(imgParam));
       }
     }
 
-    // 3. Imgur Webpage URL -> Direct Image URL
-    // e.g. https://imgur.com/ABCDEF
-    if (parsed.hostname === 'imgur.com' && !parsed.pathname.includes('.')) {
-      const id = parsed.pathname.split('/').filter(Boolean).pop();
-      if (id) {
+    // Google Encrypted Images Thumbnail CDN: Keep as is, it works directly
+    if (parsed.hostname.includes('gstatic.com')) {
+      return cleaned;
+    }
+    
+    // 2. Unsplash Page URL -> Direct High-Res Image URL
+    // e.g. https://unsplash.com/photos/a-woman-smiling-d1UPkiFd04A or https://unsplash.com/photos/d1UPkiFd04A
+    if (parsed.hostname.includes('unsplash.com')) {
+      if (parsed.pathname.startsWith('/photos/')) {
+        const parts = parsed.pathname.split('/').filter(Boolean);
+        const photoSlug = parts[parts.length - 1];
+        const match = photoSlug.match(/([a-zA-Z0-9_-]+)$/);
+        if (match) {
+          return `https://images.unsplash.com/photo-${match[1]}?w=400&auto=format&fit=crop&q=80`;
+        }
+      }
+    }
+
+    // 3. Pexels Page URL -> Direct Image URL
+    // e.g. https://www.pexels.com/photo/smiling-woman-1239291/ or https://www.pexels.com/photo/1239291/
+    if (parsed.hostname.includes('pexels.com')) {
+      if (parsed.pathname.includes('/photo/')) {
+        const parts = parsed.pathname.split('/').filter(Boolean);
+        const lastPart = parts[parts.length - 1];
+        const match = lastPart.match(/(\d+)/);
+        if (match) {
+          const photoId = match[1];
+          return `https://images.pexels.com/photos/${photoId}/pexels-photo-${photoId}.jpeg?auto=compress&cs=tinysrgb&w=400`;
+        }
+      }
+    }
+
+    // 4. Pixabay Page URL -> Direct Image URL
+    // e.g. https://pixabay.com/photos/girl-portrait-face-3064489/
+    if (parsed.hostname.includes('pixabay.com')) {
+      if (parsed.pathname.includes('/photos/')) {
+        const parts = parsed.pathname.split('/').filter(Boolean);
+        const lastPart = parts[parts.length - 1];
+        const match = lastPart.match(/(\d+)/);
+        if (match) {
+          const photoId = match[1];
+          return `https://pixabay.com/get/g${photoId}_640.jpg`;
+        }
+      }
+    }
+
+    // 5. Wikimedia Commons / Wikipedia File page -> Direct File URL
+    // e.g. https://commons.wikimedia.org/wiki/File:Example.jpg
+    if (parsed.hostname.includes('wikipedia.org') || parsed.hostname.includes('wikimedia.org')) {
+      if (parsed.pathname.includes('File:') || parsed.pathname.includes('file:')) {
+        const fileMatch = parsed.pathname.match(/(?:File|file):([^&?#/]+)/);
+        if (fileMatch) {
+          const fileName = fileMatch[1];
+          return `https://commons.wikimedia.org/wiki/Special:FilePath/${fileName}?width=400`;
+        }
+      }
+    }
+
+    // 6. Imgur Webpage URL -> Direct Image URL
+    // e.g. https://imgur.com/ABCDEF or https://imgur.com/gallery/ABCDEF or https://imgur.com/a/ABCDEF
+    if (parsed.hostname.includes('imgur.com') && !parsed.pathname.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
+      const parts = parsed.pathname.split('/').filter(Boolean);
+      const id = parts[parts.length - 1];
+      if (id && id.length >= 4 && id.length <= 12) {
         return `https://i.imgur.com/${id}.jpg`;
       }
     }
 
-    // 4. GitHub profile URL -> Direct Avatar URL
-    // e.g. https://github.com/torvalds
-    if (parsed.hostname === 'github.com' && !parsed.pathname.includes('.') && parsed.pathname.split('/').filter(Boolean).length === 1) {
-      const username = parsed.pathname.split('/').filter(Boolean)[0];
-      return `https://github.com/${username}.png?size=200`;
+    // 7. GitHub profile URL -> Direct Avatar URL
+    // e.g. https://github.com/torvalds -> https://github.com/torvalds.png?size=200
+    if (parsed.hostname === 'github.com' || parsed.hostname === 'www.github.com') {
+      const parts = parsed.pathname.split('/').filter(Boolean);
+      if (parts.length === 1 && !parts[0].includes('.')) {
+        return `https://github.com/${parts[0]}.png?size=200`;
+      }
+    }
+
+    // 8. Giphy & Tenor
+    if (parsed.hostname.includes('giphy.com') && parsed.pathname.includes('/gifs/')) {
+      const parts = parsed.pathname.split('/').filter(Boolean);
+      const slug = parts[parts.length - 1];
+      const match = slug.match(/([a-zA-Z0-9]+)$/);
+      if (match) {
+        return `https://i.giphy.com/media/${match[1]}/giphy.gif`;
+      }
+    }
+
+    // 9. Reddit preview images: fix &amp;
+    if (parsed.hostname.includes('preview.redd.it') || parsed.hostname.includes('i.redd.it')) {
+      return cleaned.replace(/&amp;/g, '&');
+    }
+
+    // 10. DiceBear seed URL generator
+    if (parsed.hostname.includes('dicebear.com')) {
+      return cleaned;
     }
 
     return cleaned;
   } catch (e) {
     return cleaned;
   }
+};
+
+/**
+ * Returns a CORS-safe, anti-hotlinking proxy URL for third-party web images
+ */
+export const getSafeProxyUrl = (url) => {
+  if (!url || typeof url !== 'string') return '';
+  if (url.startsWith('data:image/') || url.startsWith('blob:')) return url;
+  if (url.includes('wsrv.nl') || url.includes('images.weserv.nl') || url.includes('dicebear.com') || url.includes('github.com')) {
+    return url;
+  }
+  return `https://wsrv.nl/?url=${encodeURIComponent(url)}&w=400&output=webp`;
+};
+
+/**
+ * Converts any accessible image URL into a high quality permanent Base64 Data URL
+ */
+export const convertImageToDataUrl = (imageUrl, maxWidth = 400, maxHeight = 400) => {
+  return new Promise((resolve) => {
+    if (!imageUrl || typeof imageUrl !== 'string') {
+      return resolve(imageUrl);
+    }
+    if (imageUrl.startsWith('data:image/')) {
+      return resolve(imageUrl);
+    }
+
+    const img = new window.Image();
+    img.crossOrigin = 'Anonymous';
+    img.referrerPolicy = 'no-referrer';
+
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        let width = img.naturalWidth || img.width || 400;
+        let height = img.naturalHeight || img.height || 400;
+
+        if (width > maxWidth || height > maxHeight) {
+          if (width > height) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          } else {
+            width = Math.round((width * maxHeight) / height);
+            height = maxHeight;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+        resolve(dataUrl);
+      } catch (canvasErr) {
+        console.warn('Canvas conversion notice, using URL directly:', canvasErr);
+        resolve(imageUrl);
+      }
+    };
+
+    img.onerror = () => {
+      // If direct load failed for canvas, try via CORS-safe wsrv.nl proxy
+      if (!imageUrl.includes('wsrv.nl')) {
+        const proxyUrl = `https://wsrv.nl/?url=${encodeURIComponent(imageUrl)}&w=400&output=jpg`;
+        const proxyImg = new window.Image();
+        proxyImg.crossOrigin = 'Anonymous';
+        proxyImg.referrerPolicy = 'no-referrer';
+        proxyImg.onload = () => {
+          try {
+            const canvas = document.createElement('canvas');
+            canvas.width = proxyImg.width || 400;
+            canvas.height = proxyImg.height || 400;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(proxyImg, 0, 0, canvas.width, canvas.height);
+            resolve(canvas.toDataURL('image/jpeg', 0.9));
+          } catch (e) {
+            resolve(proxyUrl);
+          }
+        };
+        proxyImg.onerror = () => resolve(imageUrl);
+        proxyImg.src = proxyUrl;
+      } else {
+        resolve(imageUrl);
+      }
+    };
+
+    img.src = imageUrl;
+  });
 };
 
 export const ProfilePage = () => {
@@ -131,6 +317,9 @@ export const ProfilePage = () => {
   const [uploadFileName, setUploadFileName] = useState('');
   const [urlStatus, setUrlStatus] = useState('idle'); // 'idle' | 'loading' | 'valid' | 'error'
   const [urlErrorMessage, setUrlErrorMessage] = useState('');
+  const [isDraggingFile, setIsDraggingFile] = useState(false);
+  const [converting, setConverting] = useState(false);
+  const [urlProxyLoaded, setUrlProxyLoaded] = useState(false);
 
   // Profile Form state
   const [formData, setFormData] = useState(() => {
@@ -264,35 +453,105 @@ export const ProfilePage = () => {
   const handleFileUpload = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    processImageFile(file);
+  };
 
+  // Process raw Image File (from file input, drag & drop, or clipboard)
+  const processImageFile = (file) => {
     if (!file.type.startsWith('image/')) {
       addToast({
         type: 'error',
         title: 'Invalid File',
-        message: 'Please select a valid image file (JPG, PNG, WEBP).'
+        message: 'Please select a valid image file (JPG, PNG, WEBP, GIF).'
       });
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
+    if (file.size > 8 * 1024 * 1024) {
       addToast({
         type: 'error',
         title: 'File Too Large',
-        message: 'Please select an image smaller than 5MB.'
+        message: 'Please select an image smaller than 8MB.'
       });
       return;
     }
 
-    setUploadFileName(file.name);
+    setUploadFileName(file.name || 'Device Photo');
     const reader = new FileReader();
     reader.onload = (loadEvent) => {
       const dataUrl = loadEvent.target?.result;
       if (dataUrl) {
         setPreviewAvatar(dataUrl);
+        setCustomAvatarUrl(dataUrl);
+        setUrlStatus('valid');
+        setUrlProxyLoaded(false);
+        setUrlErrorMessage('');
+        setAvatarTab('upload');
       }
     };
     reader.readAsDataURL(file);
   };
+
+  // Drag & Drop handlers for file dropzone
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingFile(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingFile(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingFile(false);
+    const files = e.dataTransfer?.files;
+    if (files && files.length > 0) {
+      processImageFile(files[0]);
+    }
+  };
+
+  // Global Ctrl+V Paste Listener when modal is open
+  useEffect(() => {
+    if (!showAvatarPicker) return;
+
+    const handleGlobalPaste = (e) => {
+      // 1. Check for clipboard binary images (e.g. copied from web page or screenshot)
+      const items = e.clipboardData?.items;
+      if (items) {
+        for (let i = 0; i < items.length; i++) {
+          if (items[i].type.startsWith('image/')) {
+            const file = items[i].getAsFile();
+            if (file) {
+              e.preventDefault();
+              processImageFile(file);
+              addToast({
+                type: 'success',
+                title: 'Photo Pasted from Clipboard 📸',
+                message: 'Copied image loaded successfully!'
+              });
+              return;
+            }
+          }
+        }
+      }
+
+      // 2. Check for clipboard text / URL
+      const text = e.clipboardData?.getData('text');
+      if (text && (text.startsWith('http://') || text.startsWith('https://') || text.startsWith('data:image/') || text.includes('.'))) {
+        e.preventDefault();
+        setAvatarTab('url');
+        handleUrlChange(text.trim());
+      }
+    };
+
+    window.addEventListener('paste', handleGlobalPaste);
+    return () => window.removeEventListener('paste', handleGlobalPaste);
+  }, [showAvatarPicker]);
 
   // Sample quick web images for testing/inspiration
   const sampleWebImages = [
@@ -303,69 +562,167 @@ export const ProfilePage = () => {
     { name: '3D Avatar Bot', url: 'https://api.dicebear.com/7.x/bottts/svg?seed=CampusCare' }
   ];
 
-  // Validate and load image from URL live in real time
+  // Validate and load image from URL live in real time with automatic CORS Proxy fallback
   const handleUrlChange = (rawUrl) => {
     if (rawUrl === undefined || rawUrl === null) return;
     
-    if (!rawUrl.trim()) {
+    const trimmed = rawUrl.trim();
+    if (!trimmed) {
       setCustomAvatarUrl('');
       setUrlStatus('idle');
+      setUrlProxyLoaded(false);
       setUrlErrorMessage('');
       return;
     }
 
-    const resolved = cleanAndResolveImageUrl(rawUrl);
+    const resolved = cleanAndResolveImageUrl(trimmed);
     setCustomAvatarUrl(resolved);
 
     if (!resolved.startsWith('http://') && !resolved.startsWith('https://') && !resolved.startsWith('data:image/')) {
       setUrlStatus('error');
-      setUrlErrorMessage('Please enter a valid URL starting with https:// or http://');
+      setUrlProxyLoaded(false);
+      setUrlErrorMessage('Please enter a valid URL starting with https://, http://, or data:image');
       return;
     }
 
-    // Immediately update preview avatar with resolved URL
+    // Immediately set preview and loading status
     setPreviewAvatar(resolved);
     setUrlStatus('loading');
+    setUrlProxyLoaded(false);
     setUrlErrorMessage('');
 
-    // Pre-test image loading in background with no-referrer
+    // Pre-test direct image loading with no-referrer
     const img = new window.Image();
     img.referrerPolicy = 'no-referrer';
 
     let isFinished = false;
+
+    // Timeout safety
     const safetyTimer = setTimeout(() => {
       if (!isFinished) {
-        isFinished = true;
-        setUrlStatus('valid');
+        // If timed out, try proxy fallback
+        tryProxyFallback(resolved);
       }
-    }, 4000);
+    }, 4500);
+
+    const tryProxyFallback = (targetUrl) => {
+      if (isFinished) return;
+      if (!targetUrl.startsWith('data:image/') && !targetUrl.includes('wsrv.nl') && !targetUrl.includes('images.weserv.nl')) {
+        const proxyUrl = getSafeProxyUrl(targetUrl);
+        const proxyImg = new window.Image();
+        proxyImg.referrerPolicy = 'no-referrer';
+
+        proxyImg.onload = () => {
+          if (isFinished) return;
+          isFinished = true;
+          clearTimeout(safetyTimer);
+          setUrlStatus('valid');
+          setUrlProxyLoaded(true);
+          setPreviewAvatar(proxyUrl);
+          setUrlErrorMessage('');
+        };
+
+        proxyImg.onerror = () => {
+          if (isFinished) return;
+          isFinished = true;
+          clearTimeout(safetyTimer);
+          setUrlStatus('error');
+          setUrlProxyLoaded(false);
+          setUrlErrorMessage('Unable to load image from this web address. Tip: Right-click the image in your browser and click "Copy image", then press Ctrl+V here to paste it directly!');
+        };
+
+        proxyImg.src = proxyUrl;
+      } else {
+        isFinished = true;
+        clearTimeout(safetyTimer);
+        setUrlStatus('error');
+        setUrlProxyLoaded(false);
+        setUrlErrorMessage('Unable to load image. Please verify the URL points directly to an image or upload it from your device.');
+      }
+    };
 
     img.onload = () => {
       if (isFinished) return;
       isFinished = true;
       clearTimeout(safetyTimer);
       setUrlStatus('valid');
+      setUrlProxyLoaded(false);
       setPreviewAvatar(resolved);
       setUrlErrorMessage('');
     };
 
     img.onerror = () => {
       if (isFinished) return;
-      isFinished = true;
-      clearTimeout(safetyTimer);
-      setUrlStatus('error');
-      setUrlErrorMessage('Unable to load image from this URL. Make sure it is a direct image link (.jpg, .png, .webp) and is publicly accessible.');
+      tryProxyFallback(resolved);
     };
 
     img.src = resolved;
   };
 
-  // Quick paste link from clipboard
+  // Convert current preview to permanent local Base64 Data URL
+  const handleConvertToLocalDataUrl = async () => {
+    const current = previewAvatar || customAvatarUrl;
+    if (!current) return;
+    if (current.startsWith('data:image/')) {
+      addToast({
+        type: 'info',
+        title: 'Already Offline-Ready',
+        message: 'This photo is already permanently embedded.'
+      });
+      return;
+    }
+
+    setConverting(true);
+    try {
+      const dataUrl = await convertImageToDataUrl(current);
+      if (dataUrl && dataUrl.startsWith('data:image/')) {
+        setPreviewAvatar(dataUrl);
+        setCustomAvatarUrl(dataUrl);
+        setUrlStatus('valid');
+        setUrlProxyLoaded(false);
+        addToast({
+          type: 'success',
+          title: 'Converted to Local Photo 📸✨',
+          message: 'Your photo is now 100% offline-ready and permanent.'
+        });
+      }
+    } catch (e) {
+      console.warn('Conversion failed:', e);
+    } finally {
+      setConverting(false);
+    }
+  };
+
+  // Quick paste link / image from clipboard
   const handlePasteFromClipboard = async () => {
     try {
+      // 1. Check for clipboard binary images (e.g. screenshot or copied image)
+      if (navigator.clipboard && navigator.clipboard.read) {
+        try {
+          const clipboardItems = await navigator.clipboard.read();
+          for (const item of clipboardItems) {
+            const imageType = item.types.find(type => type.startsWith('image/'));
+            if (imageType) {
+              const blob = await item.getType(imageType);
+              processImageFile(blob);
+              addToast({
+                type: 'success',
+                title: 'Photo Pasted from Clipboard 📸✨',
+                message: 'Ready to be set as your profile picture.'
+              });
+              return;
+            }
+          }
+        } catch (clipErr) {
+          // Fall through to text read
+        }
+      }
+
+      // 2. Read clipboard text URL
       if (navigator.clipboard && navigator.clipboard.readText) {
         const text = await navigator.clipboard.readText();
         if (text && text.trim()) {
+          setAvatarTab('url');
           handleUrlChange(text.trim());
           addToast({
             type: 'info',
@@ -376,12 +733,17 @@ export const ProfilePage = () => {
           addToast({
             type: 'warning',
             title: 'Clipboard Empty',
-            message: 'No link or text found in clipboard.'
+            message: 'Copy an image link (or right-click image > "Copy image") in your browser, then click Paste.'
           });
         }
       }
     } catch (err) {
       console.warn('Clipboard read failed:', err);
+      addToast({
+        type: 'info',
+        title: 'Paste Tip',
+        message: 'Press Ctrl+V on your keyboard to paste the copied image or link directly.'
+      });
     }
   };
 
@@ -397,15 +759,30 @@ export const ProfilePage = () => {
     }
     if (!targetUrl) return;
 
-    setFormData(prev => ({ ...prev, avatar: targetUrl }));
+    // Automatically convert external URLs to permanent Base64 Data URL for 100% offline & hotlink protection resilience
+    let finalUrl = targetUrl;
     try {
-      await updateProfile({ avatar: targetUrl });
+      if (!targetUrl.startsWith('data:image/') && !targetUrl.startsWith('blob:')) {
+        const converted = await convertImageToDataUrl(targetUrl);
+        if (converted && converted.startsWith('data:image/')) {
+          finalUrl = converted;
+        }
+      }
+    } catch (convErr) {
+      console.warn('Auto convert noticed, applying target URL:', convErr);
+    }
+
+    setFormData(prev => ({ ...prev, avatar: finalUrl }));
+    setPreviewAvatar(finalUrl);
+    try {
+      await updateProfile({ avatar: finalUrl });
       addToast({
         type: 'success',
         title: 'Profile Photo Updated ✨',
         message: 'Your new avatar has been saved.'
       });
       setShowAvatarPicker(false);
+      setUploadFileName('');
     } catch (err) {
       addToast({
         type: 'error',
@@ -676,7 +1053,12 @@ export const ProfilePage = () => {
                     display: 'block'
                   }}
                   onError={(e) => {
-                    e.target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(formData.name || 'Student')}`;
+                    if (formData.avatar && !e.target.dataset.triedProxy && !formData.avatar.startsWith('data:') && !formData.avatar.includes('wsrv.nl')) {
+                      e.target.dataset.triedProxy = 'true';
+                      e.target.src = getSafeProxyUrl(formData.avatar);
+                    } else {
+                      e.target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(formData.name || 'Student')}`;
+                    }
                   }}
                 />
                 <button
@@ -1044,6 +1426,67 @@ export const ProfilePage = () => {
 
             <form onSubmit={handleSaveProfile} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
+                
+                {/* Profile Photo / Avatar Editor in Form */}
+                <div style={{
+                  gridColumn: '1 / -1',
+                  padding: '16px',
+                  backgroundColor: isEditing ? '#FFFDFE' : '#F8FAFC',
+                  borderRadius: '16px',
+                  border: isEditing ? '1.5px dashed rgba(236, 72, 153, 0.4)' : '1px solid var(--border-color)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: '14px'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                    <img
+                      src={formData.avatar}
+                      alt="Avatar"
+                      referrerPolicy="no-referrer"
+                      style={{
+                        width: '52px',
+                        height: '52px',
+                        borderRadius: '16px',
+                        objectFit: 'cover',
+                        border: '2px solid #EC4899',
+                        boxShadow: '0 4px 12px rgba(236, 72, 153, 0.2)',
+                        backgroundColor: '#ffffff'
+                      }}
+                      onError={(e) => {
+                        if (formData.avatar && !e.target.dataset.triedProxy && !formData.avatar.startsWith('data:') && !formData.avatar.includes('wsrv.nl')) {
+                          e.target.dataset.triedProxy = 'true';
+                          e.target.src = getSafeProxyUrl(formData.avatar);
+                        } else {
+                          e.target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(formData.name || 'Student')}`;
+                        }
+                      }}
+                    />
+                    <div>
+                      <div style={{ fontSize: '0.88rem', fontWeight: 800, color: '#1E1B4B' }}>Profile Avatar & Photo</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                        {isEditing ? 'Upload from device, browse avatars, or paste web image link' : 'Verified campus profile avatar'}
+                      </div>
+                    </div>
+                  </div>
+                  {isEditing && (
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPreviewAvatar(formData.avatar);
+                          setShowAvatarPicker(true);
+                        }}
+                        className="btn btn-primary btn-sm"
+                        style={{ gap: '6px' }}
+                      >
+                        <Camera size={14} />
+                        <span>Upload / Change Photo</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
                 
                 {/* Full Name */}
                 <div>
@@ -1819,44 +2262,86 @@ export const ProfilePage = () => {
             <div style={{
               display: 'flex',
               alignItems: 'center',
+              justifyContent: 'space-between',
               gap: '16px',
-              padding: '14px',
+              padding: '16px',
               backgroundColor: '#FDF2F8',
-              borderRadius: '16px',
-              border: '1.5px solid rgba(249, 168, 212, 0.5)',
-              marginBottom: '18px'
+              borderRadius: '18px',
+              border: '1.5px solid rgba(249, 168, 212, 0.6)',
+              marginBottom: '18px',
+              flexWrap: 'wrap'
             }}>
-              <img
-                src={previewAvatar || formData.avatar}
-                alt="Avatar Preview"
-                referrerPolicy="no-referrer"
-                style={{ width: '64px', height: '64px', borderRadius: '18px', objectFit: 'cover', border: '2px solid #ffffff', boxShadow: '0 4px 12px rgba(236, 72, 153, 0.25)', backgroundColor: '#ffffff' }}
-                onLoad={() => {
-                  if (avatarTab === 'url' && customAvatarUrl) setUrlStatus('valid');
-                }}
-                onError={(e) => {
-                  if (avatarTab === 'url') {
-                    setUrlStatus('error');
-                    setUrlErrorMessage('Could not load image from this URL. Please verify the URL points directly to an image (.jpg, .png, .webp).');
-                  }
-                  e.target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(formData.name || 'Student')}`;
-                }}
-              />
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#1E1B4B' }}>Photo Preview</div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                  {uploadFileName ? `Selected: ${uploadFileName}` : 'Ready to be set as your campus profile picture'}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                <img
+                  src={previewAvatar || formData.avatar}
+                  alt="Avatar Preview"
+                  referrerPolicy="no-referrer"
+                  style={{
+                    width: '64px',
+                    height: '64px',
+                    borderRadius: '18px',
+                    objectFit: 'cover',
+                    border: '2.5px solid #ffffff',
+                    boxShadow: '0 4px 14px rgba(236, 72, 153, 0.28)',
+                    backgroundColor: '#ffffff'
+                  }}
+                  onLoad={() => {
+                    if (avatarTab === 'url' && customAvatarUrl) setUrlStatus('valid');
+                  }}
+                  onError={(e) => {
+                    if (previewAvatar && !e.target.dataset.triedProxy && !previewAvatar.startsWith('data:') && !previewAvatar.includes('wsrv.nl')) {
+                      e.target.dataset.triedProxy = 'true';
+                      e.target.src = getSafeProxyUrl(previewAvatar);
+                      setUrlProxyLoaded(true);
+                    } else {
+                      if (avatarTab === 'url') {
+                        setUrlStatus('error');
+                        setUrlErrorMessage('Could not load image from this URL. Tip: Right-click the image in your browser > "Copy image", then press Ctrl+V here to paste it directly!');
+                      }
+                      e.target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(formData.name || 'Student')}`;
+                    }
+                  }}
+                />
+                <div>
+                  <div style={{ fontSize: '0.88rem', fontWeight: 800, color: '#1E1B4B' }}>Photo Preview</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                    {uploadFileName 
+                      ? `Selected: ${uploadFileName}` 
+                      : (previewAvatar?.startsWith('data:image/') ? 'Offline-Ready Local Photo' : 'Ready to be set as your profile avatar')}
+                  </div>
+                  {urlProxyLoaded && (
+                    <div style={{ fontSize: '0.7rem', color: '#10B981', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
+                      <CheckCircle2 size={12} />
+                      <span>Loaded via Safe CDN Proxy (Anti-Hotlink Active)</span>
+                    </div>
+                  )}
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => handleApplyAvatar(previewAvatar)}
-                className="btn btn-primary btn-sm"
-                style={{ fontSize: '0.78rem', gap: '4px' }}
-              >
-                <Check size={14} />
-                <span>Apply Photo</span>
-              </button>
+
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                {previewAvatar && !previewAvatar.startsWith('data:image/') && (
+                  <button
+                    type="button"
+                    onClick={handleConvertToLocalDataUrl}
+                    className="btn btn-secondary btn-sm"
+                    disabled={converting}
+                    style={{ fontSize: '0.75rem', gap: '4px' }}
+                    title="Save this photo directly in your profile so it never expires or breaks"
+                  >
+                    {converting ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} color="#EC4899" />}
+                    <span>{converting ? 'Saving...' : 'Embed Offline'}</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => handleApplyAvatar(previewAvatar)}
+                  className="btn btn-primary btn-sm"
+                  style={{ fontSize: '0.78rem', gap: '4px' }}
+                >
+                  <Check size={14} />
+                  <span>Apply Photo</span>
+                </button>
+              </div>
             </div>
 
             {/* Selector Tabs */}
@@ -1865,8 +2350,8 @@ export const ProfilePage = () => {
                 type="button"
                 onClick={() => setAvatarTab('upload')}
                 style={{
-                  padding: '6px 12px',
-                  borderRadius: '8px',
+                  padding: '7px 14px',
+                  borderRadius: '10px',
                   border: 'none',
                   background: avatarTab === 'upload' ? 'rgba(236, 72, 153, 0.12)' : 'transparent',
                   color: avatarTab === 'upload' ? '#EC4899' : 'var(--text-secondary)',
@@ -1875,7 +2360,8 @@ export const ProfilePage = () => {
                   display: 'flex',
                   alignItems: 'center',
                   gap: '6px',
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease'
                 }}
               >
                 <Upload size={14} />
@@ -1886,8 +2372,8 @@ export const ProfilePage = () => {
                 type="button"
                 onClick={() => setAvatarTab('presets')}
                 style={{
-                  padding: '6px 12px',
-                  borderRadius: '8px',
+                  padding: '7px 14px',
+                  borderRadius: '10px',
                   border: 'none',
                   background: avatarTab === 'presets' ? 'rgba(236, 72, 153, 0.12)' : 'transparent',
                   color: avatarTab === 'presets' ? '#EC4899' : 'var(--text-secondary)',
@@ -1896,7 +2382,8 @@ export const ProfilePage = () => {
                   display: 'flex',
                   alignItems: 'center',
                   gap: '6px',
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease'
                 }}
               >
                 <Image size={14} />
@@ -1907,8 +2394,8 @@ export const ProfilePage = () => {
                 type="button"
                 onClick={() => setAvatarTab('url')}
                 style={{
-                  padding: '6px 12px',
-                  borderRadius: '8px',
+                  padding: '7px 14px',
+                  borderRadius: '10px',
                   border: 'none',
                   background: avatarTab === 'url' ? 'rgba(236, 72, 153, 0.12)' : 'transparent',
                   color: avatarTab === 'url' ? '#EC4899' : 'var(--text-secondary)',
@@ -1917,7 +2404,8 @@ export const ProfilePage = () => {
                   display: 'flex',
                   alignItems: 'center',
                   gap: '6px',
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease'
                 }}
               >
                 <ExternalLink size={14} />
@@ -1925,59 +2413,105 @@ export const ProfilePage = () => {
               </button>
             </div>
 
-            {/* TAB: UPLOAD FROM DEVICE / GALLERY */}
+            {/* TAB: UPLOAD FROM DEVICE / GALLERY / CLIPBOARD */}
             {avatarTab === 'upload' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                 <input
                   type="file"
                   ref={fileInputRef}
-                  accept="image/png, image/jpeg, image/jpg, image/webp, image/gif"
+                  accept="image/png, image/jpeg, image/jpg, image/webp, image/gif, image/svg+xml"
                   onChange={handleFileUpload}
                   style={{ display: 'none' }}
                 />
 
                 <div
                   onClick={() => fileInputRef.current?.click()}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
                   style={{
-                    border: '2px dashed rgba(236, 72, 153, 0.4)',
-                    borderRadius: '16px',
-                    padding: '28px 16px',
+                    border: isDraggingFile ? '2.5px dashed #EC4899' : '2px dashed rgba(236, 72, 153, 0.4)',
+                    borderRadius: '18px',
+                    padding: '30px 18px',
                     textAlign: 'center',
-                    backgroundColor: '#FFFDFE',
+                    backgroundColor: isDraggingFile ? '#FFF0F5' : '#FFFDFE',
                     cursor: 'pointer',
                     transition: 'all 0.2s ease',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: '10px'
+                    gap: '12px'
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.borderColor = '#EC4899'}
-                  onMouseLeave={(e) => e.currentTarget.style.borderColor = 'rgba(236, 72, 153, 0.4)'}
+                  onMouseEnter={(e) => { if (!isDraggingFile) e.currentTarget.style.borderColor = '#EC4899'; }}
+                  onMouseLeave={(e) => { if (!isDraggingFile) e.currentTarget.style.borderColor = 'rgba(236, 72, 153, 0.4)'; }}
                 >
-                  <div style={{ width: '48px', height: '48px', borderRadius: '50%', backgroundColor: 'rgba(236, 72, 153, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#EC4899' }}>
-                    <Upload size={22} />
+                  <div style={{
+                    width: '52px',
+                    height: '52px',
+                    borderRadius: '50%',
+                    backgroundColor: 'rgba(236, 72, 153, 0.12)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#EC4899'
+                  }}>
+                    <Upload size={24} />
                   </div>
                   <div>
-                    <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#1E1B4B' }}>
-                      Click to Browse Gallery or Folder
+                    <div style={{ fontSize: '0.92rem', fontWeight: 800, color: '#1E1B4B' }}>
+                      {isDraggingFile ? 'Drop Image Here to Upload' : 'Click to Browse Photos or Drag & Drop'}
                     </div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                      Supports JPG, PNG, WEBP & GIF up to 5MB
+                    <div style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', marginTop: '3px' }}>
+                      Supports JPG, PNG, WEBP, GIF & SVG up to 8MB
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    className="btn btn-primary btn-sm"
-                    style={{ marginTop: '4px', gap: '6px' }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      fileInputRef.current?.click();
-                    }}
-                  >
-                    <Image size={14} />
-                    <span>Choose Photo from Device</span>
-                  </button>
+
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '4px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                    <button
+                      type="button"
+                      className="btn btn-primary btn-sm"
+                      style={{ gap: '6px' }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        fileInputRef.current?.click();
+                      }}
+                    >
+                      <Image size={14} />
+                      <span>Choose from Computer / Phone</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      style={{ gap: '6px' }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handlePasteFromClipboard();
+                      }}
+                    >
+                      <Clipboard size={14} />
+                      <span>Paste Copied Photo</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Paste Shortcut Banner */}
+                <div style={{
+                  padding: '10px 14px',
+                  borderRadius: '12px',
+                  backgroundColor: 'rgba(236, 72, 153, 0.06)',
+                  border: '1px solid rgba(236, 72, 153, 0.2)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  fontSize: '0.78rem',
+                  color: '#1E1B4B'
+                }}>
+                  <Sparkles size={14} color="#EC4899" style={{ flexShrink: 0 }} />
+                  <div>
+                    <strong>Pro-tip:</strong> When browsing online, right-click any image & select <strong>"Copy Image"</strong> (or take a screenshot), then press <kbd style={{ padding: '1px 5px', borderRadius: '4px', backgroundColor: '#ffffff', border: '1px solid #d1d5db', fontSize: '0.75rem', fontWeight: 700 }}>Ctrl+V</kbd> anywhere on this screen to paste it instantly!
+                  </div>
                 </div>
               </div>
             )}
@@ -1985,31 +2519,37 @@ export const ProfilePage = () => {
             {/* TAB: PRESET GALLERY */}
             {avatarTab === 'presets' && (
               <div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', maxHeight: '220px', overflowY: 'auto', paddingRight: '4px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', maxHeight: '230px', overflowY: 'auto', paddingRight: '4px' }}>
                   {avatarPresets.map((preset, idx) => (
                     <button
                       key={idx}
                       type="button"
-                      onClick={() => setPreviewAvatar(preset.url)}
+                      onClick={() => {
+                        setPreviewAvatar(preset.url);
+                        setCustomAvatarUrl(preset.url);
+                        setUrlStatus('valid');
+                        setUrlProxyLoaded(false);
+                      }}
                       style={{
                         border: previewAvatar === preset.url ? '3px solid #EC4899' : '2px solid rgba(249, 168, 212, 0.35)',
                         borderRadius: '16px',
-                        padding: '4px',
+                        padding: '6px',
                         backgroundColor: '#ffffff',
                         cursor: 'pointer',
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'center',
-                        gap: '4px',
+                        gap: '5px',
                         transition: 'all 0.15s ease'
                       }}
                     >
                       <img
                         src={preset.url}
                         alt={preset.name}
+                        referrerPolicy="no-referrer"
                         style={{ width: '52px', height: '52px', borderRadius: '12px', objectFit: 'cover' }}
                       />
-                      <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#1E1B4B', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>
+                      <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#1E1B4B', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>
                         {preset.name.split(' ')[0]}
                       </span>
                     </button>
@@ -2027,7 +2567,7 @@ export const ProfilePage = () => {
                     <span>Paste Web Image Link (URL)</span>
                   </label>
                   <p style={{ margin: '0 0 10px 0', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
-                    Paste any direct image URL from your browser (e.g. Unsplash, Google Images, GitHub) to instantly preview and set as your avatar.
+                    Paste any direct image URL or search link from your browser (Google Images, Unsplash, Pexels, Wikipedia, GitHub, Imgur, Pinterest). We resolve it and bypass anti-hotlinking automatically.
                   </p>
                   
                   {/* URL Input & Actions */}
@@ -2037,7 +2577,7 @@ export const ProfilePage = () => {
                       <input
                         type="url"
                         className="input-control"
-                        placeholder="https://images.unsplash.com/photo-..."
+                        placeholder="https://images.unsplash.com/photo-... or Google image link"
                         value={customAvatarUrl}
                         onChange={(e) => handleUrlChange(e.target.value)}
                         onPaste={(e) => {
@@ -2052,6 +2592,7 @@ export const ProfilePage = () => {
                           onClick={() => {
                             setCustomAvatarUrl('');
                             setUrlStatus('idle');
+                            setUrlProxyLoaded(false);
                             setUrlErrorMessage('');
                           }}
                           style={{
@@ -2077,7 +2618,7 @@ export const ProfilePage = () => {
                       onClick={handlePasteFromClipboard}
                       className="btn btn-secondary btn-sm"
                       style={{ gap: '6px', whiteSpace: 'nowrap', padding: '0 14px' }}
-                      title="Paste link from clipboard"
+                      title="Paste link or image from clipboard"
                     >
                       <Clipboard size={14} />
                       <span>Paste Link</span>
@@ -2099,7 +2640,7 @@ export const ProfilePage = () => {
                     color: '#EC4899'
                   }}>
                     <Loader2 size={18} className="animate-spin" />
-                    <span>Verifying image link and generating preview...</span>
+                    <span>Resolving image URL and verifying preview...</span>
                   </div>
                 )}
 
@@ -2117,8 +2658,11 @@ export const ProfilePage = () => {
                   }}>
                     <AlertTriangle size={16} style={{ flexShrink: 0, marginTop: '2px' }} />
                     <div>
-                      <strong>Invalid Image Link: </strong>
-                      {urlErrorMessage || 'Could not load image. Make sure the URL is public and ends with .jpg, .png, or .webp.'}
+                      <strong>Unable to load image from URL: </strong>
+                      <div>{urlErrorMessage || 'Could not load image directly from this website.'}</div>
+                      <div style={{ marginTop: '6px', fontSize: '0.76rem', color: '#1E1B4B' }}>
+                        💡 <strong>Easy Fix:</strong> In your browser, right-click the image, choose <strong>"Copy Image"</strong>, then press <kbd style={{ padding: '1px 5px', borderRadius: '4px', backgroundColor: '#ffffff', border: '1px solid #d1d5db' }}>Ctrl+V</kbd> here!
+                      </div>
                     </div>
                   </div>
                 )}
@@ -2146,9 +2690,17 @@ export const ProfilePage = () => {
                           setUrlErrorMessage('');
                         }}
                         onError={(e) => {
-                          setUrlStatus('error');
-                          setUrlErrorMessage('Could not load image. Make sure the URL is public and ends with .jpg, .png, or .webp.');
-                          e.target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=preview`;
+                          if (customAvatarUrl && !e.target.dataset.triedProxy && !customAvatarUrl.startsWith('data:') && !customAvatarUrl.includes('wsrv.nl')) {
+                            e.target.dataset.triedProxy = 'true';
+                            const pUrl = getSafeProxyUrl(customAvatarUrl);
+                            e.target.src = pUrl;
+                            setUrlProxyLoaded(true);
+                            setUrlStatus('valid');
+                          } else {
+                            setUrlStatus('error');
+                            setUrlErrorMessage('Could not load image from this site. Copy the image directly (Right-click > "Copy image") and paste with Ctrl+V.');
+                            e.target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=preview`;
+                          }
                         }}
                         style={{
                           width: '56px',
@@ -2173,7 +2725,7 @@ export const ProfilePage = () => {
                             <>
                               <CheckCircle2 size={15} color="#10b981" />
                               <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#10b981' }}>
-                                Live Image Loaded!
+                                {urlProxyLoaded ? 'Image Verified via Safe Proxy!' : 'Live Image Verified!'}
                               </span>
                             </>
                           )}
@@ -2184,15 +2736,17 @@ export const ProfilePage = () => {
                       </div>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => handleApplyAvatar(customAvatarUrl)}
-                      className="btn btn-primary btn-sm"
-                      style={{ gap: '6px', fontSize: '0.78rem' }}
-                    >
-                      <Check size={14} />
-                      <span>Use This Photo</span>
-                    </button>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button
+                        type="button"
+                        onClick={() => handleApplyAvatar(customAvatarUrl)}
+                        className="btn btn-primary btn-sm"
+                        style={{ gap: '6px', fontSize: '0.78rem' }}
+                      >
+                        <Check size={14} />
+                        <span>Use This Photo</span>
+                      </button>
+                    </div>
                   </div>
                 )}
 
@@ -2236,6 +2790,9 @@ export const ProfilePage = () => {
                 onClick={() => {
                   const def = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(formData.name || 'Priya')}`;
                   setPreviewAvatar(def);
+                  setCustomAvatarUrl(def);
+                  setUrlStatus('valid');
+                  setUrlProxyLoaded(false);
                 }}
                 className="btn btn-ghost btn-sm"
                 style={{ color: 'var(--text-secondary)', fontSize: '0.78rem', gap: '4px' }}
