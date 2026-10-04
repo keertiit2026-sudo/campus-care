@@ -37,11 +37,11 @@ export const StudentLoginPage = ({ defaultTab = 'login' }) => {
     }
   }, [location.pathname]);
 
-  // Login form state
+  // Login form state (clean empty states for real student input)
   const [identifier, setIdentifier] = useState(() => {
-    return localStorage.getItem('campuscare_saved_student_id') || 'STU-2024-8841';
+    return localStorage.getItem('campuscare_saved_student_id') || '';
   });
-  const [loginPassword, setLoginPassword] = useState('student123');
+  const [loginPassword, setLoginPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
   // Register form state
@@ -54,6 +54,13 @@ export const StudentLoginPage = ({ defaultTab = 'login' }) => {
 
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+
+  // Quick Demo Helper for presentations / tests
+  const handleFillDemoStudent = () => {
+    setIdentifier('priya.sharma@college.edu');
+    setLoginPassword('student123');
+    setError('');
+  };
 
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
@@ -299,13 +306,13 @@ export const StudentLoginPage = ({ defaultTab = 'login' }) => {
           <form onSubmit={handleLoginSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div>
               <label className="input-label" style={{ fontWeight: 700, color: '#1E1B4B' }}>
-                Email or Student ID
+                College Email or Student ID
               </label>
               <div style={{ position: 'relative' }}>
                 <Mail size={16} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#EC4899' }} />
                 <input
                   type="text"
-                  placeholder="e.g. STU-2024-8841 or email"
+                  placeholder="e.g. yourname@college.edu or Roll Number"
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
                   className="input-control"
@@ -323,7 +330,7 @@ export const StudentLoginPage = ({ defaultTab = 'login' }) => {
                 <Lock size={16} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#EC4899' }} />
                 <input
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="••••••••"
+                  placeholder="Enter your password"
                   value={loginPassword}
                   onChange={(e) => setLoginPassword(e.target.value)}
                   className="input-control"
@@ -381,7 +388,7 @@ export const StudentLoginPage = ({ defaultTab = 'login' }) => {
                   cursor: 'pointer'
                 }}
               >
-                Register
+                Register / Sign Up
               </button>
             </div>
           </form>
@@ -392,7 +399,7 @@ export const StudentLoginPage = ({ defaultTab = 'login' }) => {
               <label className="input-label" style={{ fontWeight: 700 }}>Full Name *</label>
               <input
                 type="text"
-                placeholder="e.g. Priya Sharma"
+                placeholder="e.g. Keerti Sharma"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 className="input-control"
@@ -405,7 +412,7 @@ export const StudentLoginPage = ({ defaultTab = 'login' }) => {
               <label className="input-label" style={{ fontWeight: 700 }}>College Email *</label>
               <input
                 type="email"
-                placeholder="priya.sharma@college.edu"
+                placeholder="e.g. keerti@college.edu or your personal email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="input-control"
@@ -432,7 +439,7 @@ export const StudentLoginPage = ({ defaultTab = 'login' }) => {
               <label className="input-label" style={{ fontWeight: 700 }}>Create Password *</label>
               <input
                 type="password"
-                placeholder="At least 6 characters"
+                placeholder="Create a secure password (min. 6 characters)"
                 value={registerPassword}
                 onChange={(e) => setRegisterPassword(e.target.value)}
                 className="input-control"
