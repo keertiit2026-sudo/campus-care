@@ -146,12 +146,12 @@ export const compareComplaints = (target, candidate) => {
 /**
  * Find similar and duplicate complaints in the system
  */
-export const findSimilarComplaints = (targetComplaint, options = {}) => {
+export const findSimilarComplaints = async (targetComplaint, options = {}) => {
   const threshold = options.threshold || INTELLIGENCE_CONFIG.SIMILARITY_THRESHOLD;
   const limit = options.limit || 5;
   const windowDays = options.windowDays || INTELLIGENCE_CONFIG.SIMILARITY_TIME_WINDOW_DAYS;
 
-  const allComplaints = db.getComplaints();
+  const allComplaints = options.complaints || (await db.getComplaints());
   const now = new Date();
 
   const results = [];

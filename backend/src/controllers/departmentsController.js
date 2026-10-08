@@ -2,19 +2,19 @@ import { db } from '../db/storage.js';
 import bcrypt from 'bcryptjs';
 
 // 1. Get All Departments (with active ticket counts and active staff counts)
-export const getDepartments = (req, res) => {
+export const getDepartments = async (req, res) => {
   try {
-    const departments = db.getDepartments();
-    const complaints = db.getComplaints();
-    const allStaff = db.getStaffMembers();
+    const departments = await db.getDepartments();
+    const complaints = await db.getComplaints();
+    const allStaff = await db.getStaffMembers('all');
 
-    const enriched = departments.map(d => {
+    const enriched = departments.map((d) => {
       const activeCount = complaints.filter(
-        c => c.assignedDepartment === d.id && c.status !== 'Resolved' && c.status !== 'Closed'
+        (c) => c.assignedDepartment === d.id && c.status !== 'Resolved' && c.status !== 'Closed'
       ).length;
 
       const activeStaffInDept = allStaff.filter(
-        s => (s.departmentId === d.id || s.department === d.name) && (s.status || 'active') === 'active'
+        (s) => (s.departmentId === d.id || s.department === d.name) && (s.status || 'active') === 'active'
       ).length;
 
       return {
@@ -31,12 +31,12 @@ export const getDepartments = (req, res) => {
 };
 
 // 2. Update Department Details (Admin only)
-export const updateDepartment = (req, res) => {
+export const updateDepartment = async (req, res) => {
   try {
     const { id } = req.params;
     const { name, head, email, phone, slaHours, location, code } = req.body;
 
-    const existing = db.findDepartmentById(id);
+    const existing = await db.findDepartmentById(id);
     if (!existing) {
       return res.status(404).json({ error: 'Department not found.' });
     }
@@ -50,7 +50,7 @@ export const updateDepartment = (req, res) => {
     if (location !== undefined) updates.location = location.trim();
     if (code !== undefined) updates.code = code.trim().toUpperCase();
 
-    const updated = db.updateDepartment(id, updates);
+    const updated = await db.updateDepartment(id, updates);
     res.json({ message: 'Department details updated successfully.', department: updated });
   } catch (err) {
     res.status(500).json({ error: 'Failed to update department.' });
@@ -58,27 +58,29 @@ export const updateDepartment = (req, res) => {
 };
 
 // 3. Get Staff Members (with filtering by status and real-time ticket metrics)
-export const getStaff = (req, res) => {
+export const getStaff = async (req, res) => {
   try {
     const { status, departmentId } = req.query;
-    let staffList = db.getStaffMembers(status || 'active');
+    let staffList = await db.getStaffMembers(status || 'active');
 
     if (departmentId && departmentId !== 'all') {
-      staffList = staffList.filter(s => s.departmentId === departmentId);
+      staffList = staffList.filter((s) => s.departmentId === departmentId);
     }
 
-    const complaints = db.getComplaints();
+    const complaints = await db.getComplaints();
+    const departments = await db.getDepartments();
+    const deptMap = new Map(departments.map((d) => [d.id, d]));
 
-    const enrichedStaff = staffList.map(u => {
+    const enrichedStaff = staffList.map((u) => {
       const { passwordHash, ...safe } = u;
       const activeTickets = complaints.filter(
-        c => c.assignedStaff === u.id && c.status !== 'Resolved' && c.status !== 'Closed'
+        (c) => c.assignedStaff === u.id && c.status !== 'Resolved' && c.status !== 'Closed'
       ).length;
       const resolvedTickets = complaints.filter(
-        c => c.assignedStaff === u.id && (c.status === 'Resolved' || c.status === 'Closed')
+        (c) => c.assignedStaff === u.id && (c.status === 'Resolved' || c.status === 'Closed')
       ).length;
 
-      const dept = db.findDepartmentById(u.departmentId);
+      const dept = deptMap.get(u.departmentId);
 
       return {
         ...safe,
@@ -97,26 +99,26 @@ export const getStaff = (req, res) => {
 };
 
 // 4. Get Single Staff Member by ID
-export const getStaffById = (req, res) => {
+export const getStaffById = async (req, res) => {
   try {
     const { id } = req.params;
-    const staff = db.findStaffById(id);
+    const staff = await db.findStaffById(id);
 
     if (!staff) {
       return res.status(404).json({ error: 'Staff member not found.' });
     }
 
     const { passwordHash, ...safe } = staff;
-    const complaints = db.getComplaints();
+    const complaints = await db.getComplaints();
 
     const openComplaints = complaints.filter(
-      c => c.assignedStaff === id && c.status !== 'Resolved' && c.status !== 'Closed'
+      (c) => c.assignedStaff === id && c.status !== 'Resolved' && c.status !== 'Closed'
     );
     const resolvedComplaints = complaints.filter(
-      c => c.assignedStaff === id && (c.status === 'Resolved' || c.status === 'Closed')
+      (c) => c.assignedStaff === id && (c.status === 'Resolved' || c.status === 'Closed')
     );
 
-    const dept = db.findDepartmentById(staff.departmentId);
+    const dept = await db.findDepartmentById(staff.departmentId);
 
     res.json({
       staff: {
@@ -125,7 +127,7 @@ export const getStaffById = (req, res) => {
         activeTickets: openComplaints.length,
         resolvedTickets: resolvedComplaints.length,
         slaHours: dept?.slaHours || 24,
-        openComplaints: openComplaints.map(c => ({
+        openComplaints: openComplaints.map((c) => ({
           id: c.id,
           title: c.title,
           category: c.category,
@@ -143,16 +145,16 @@ export const getStaffById = (req, res) => {
 };
 
 // 5. Get Open Tickets for a Staff Member
-export const getStaffOpenTickets = (req, res) => {
+export const getStaffOpenTickets = async (req, res) => {
   try {
     const { id } = req.params;
-    const staff = db.findStaffById(id);
+    const staff = await db.findStaffById(id);
 
     if (!staff) {
       return res.status(404).json({ error: 'Staff member not found.' });
     }
 
-    const openTickets = db.findStaffOpenTickets(id).map(c => ({
+    const openTickets = (await db.findStaffOpenTickets(id)).map((c) => ({
       id: c.id,
       title: c.title,
       description: c.description,
@@ -177,32 +179,32 @@ export const getStaffOpenTickets = (req, res) => {
 };
 
 // 6. Add New Staff / Faculty (Admin only)
-export const createStaff = (req, res) => {
+export const createStaff = async (req, res) => {
   try {
-    const { 
-      name, 
-      employeeId, 
-      email, 
-      departmentId, 
-      department, 
-      roleTitle, 
-      categoryResponsibility, 
-      campusZone, 
-      phone, 
-      status, 
-      password 
+    const {
+      name,
+      employeeId,
+      email,
+      departmentId,
+      department,
+      roleTitle,
+      categoryResponsibility,
+      campusZone,
+      phone,
+      status,
+      password
     } = req.body;
 
     if (!name || !email || !departmentId) {
       return res.status(400).json({ error: 'Staff name, email, and assigned department are required.' });
     }
 
-    const existing = db.findUserByEmail(email.trim());
+    const existing = await db.findUserByEmail(email.trim());
     if (existing) {
       return res.status(409).json({ error: 'A user account with this email address already exists.' });
     }
 
-    const deptObj = db.findDepartmentById(departmentId);
+    const deptObj = await db.findDepartmentById(departmentId);
     const deptName = department || (deptObj ? deptObj.name : 'Maintenance Department');
 
     const salt = bcrypt.genSaltSync(10);
@@ -230,7 +232,7 @@ export const createStaff = (req, res) => {
       createdAt: new Date().toISOString()
     };
 
-    db.createUser(newStaff);
+    await db.createUser(newStaff);
 
     const { passwordHash: _, ...safeStaff } = newStaff;
     res.status(201).json({
@@ -244,23 +246,23 @@ export const createStaff = (req, res) => {
 };
 
 // 7. Update Existing Staff Member (Admin only)
-export const updateStaff = (req, res) => {
+export const updateStaff = async (req, res) => {
   try {
     const { id } = req.params;
-    const { 
-      name, 
-      employeeId, 
-      email, 
-      departmentId, 
-      department, 
-      roleTitle, 
-      categoryResponsibility, 
-      campusZone, 
-      phone, 
-      status 
+    const {
+      name,
+      employeeId,
+      email,
+      departmentId,
+      department,
+      roleTitle,
+      categoryResponsibility,
+      campusZone,
+      phone,
+      status
     } = req.body;
 
-    const existing = db.findStaffById(id);
+    const existing = await db.findStaffById(id);
     if (!existing) {
       return res.status(404).json({ error: 'Staff member not found.' });
     }
@@ -271,7 +273,7 @@ export const updateStaff = (req, res) => {
     if (email !== undefined) updates.email = email.trim().toLowerCase();
     if (departmentId !== undefined) {
       updates.departmentId = departmentId;
-      const deptObj = db.findDepartmentById(departmentId);
+      const deptObj = await db.findDepartmentById(departmentId);
       if (deptObj) updates.department = deptObj.name;
     }
     if (department !== undefined) updates.department = department;
@@ -281,7 +283,7 @@ export const updateStaff = (req, res) => {
     if (phone !== undefined) updates.phone = phone.trim();
     if (status !== undefined) updates.status = status;
 
-    const updated = db.updateStaff(id, updates);
+    const updated = await db.updateStaff(id, updates);
     const { passwordHash, ...safeStaff } = updated;
 
     res.json({ message: 'Staff member profile updated.', staff: safeStaff });
@@ -291,7 +293,7 @@ export const updateStaff = (req, res) => {
 };
 
 // 8. Replace Staff & Transfer Tickets Workflow (Admin only)
-export const replaceAndTransferStaff = (req, res) => {
+export const replaceAndTransferStaff = async (req, res) => {
   try {
     const oldStaffId = req.body.oldStaffId || req.body.departingStaffId;
     const newStaffId = req.body.newStaffId || req.body.replacementStaffId;
@@ -306,7 +308,7 @@ export const replaceAndTransferStaff = (req, res) => {
 
     const adminName = req.user?.name || 'Dean Sarah Jenkins';
 
-    const result = db.replaceStaffAndTransferComplaints({
+    const result = await db.replaceStaffAndTransferComplaints({
       oldStaffId,
       newStaffId,
       complaintIds,
@@ -326,14 +328,14 @@ export const replaceAndTransferStaff = (req, res) => {
 };
 
 // 9. Safe Staff Deactivation (Admin only)
-export const deactivateStaff = (req, res) => {
+export const deactivateStaff = async (req, res) => {
   try {
     const { id } = req.params;
     const targetStatus = req.body.status === 'left_college' ? 'left_college' : 'inactive';
     const reason = req.body.reason || req.body.notes || '';
     const adminName = req.user?.name || 'Administrator';
 
-    const staff = db.deactivateStaff(id, targetStatus, reason, adminName);
+    const staff = await db.deactivateStaff(id, targetStatus, reason, adminName);
     res.json({
       message: `Staff member ${staff.name} marked as ${targetStatus === 'left_college' ? 'Left College' : 'Inactive'}.`,
       staff
@@ -351,10 +353,10 @@ export const deactivateStaff = (req, res) => {
 };
 
 // 10. Reactivate Staff (Admin only)
-export const reactivateStaff = (req, res) => {
+export const reactivateStaff = async (req, res) => {
   try {
     const { id } = req.params;
-    const staff = db.reactivateStaff(id);
+    const staff = await db.reactivateStaff(id);
     res.json({
       message: `Staff member ${staff.name} has been reactivated.`,
       staff
@@ -365,19 +367,15 @@ export const reactivateStaff = (req, res) => {
 };
 
 // 11. Delete Staff (Legacy fallback)
-export const deleteStaff = (req, res) => {
+export const deleteStaff = async (req, res) => {
   try {
     const { id } = req.params;
-    const existing = db.findStaffById(id);
+    const existing = await db.findStaffById(id);
     if (!existing) {
       return res.status(404).json({ error: 'Staff member not found.' });
     }
 
-    // Rather than hard deletion, soft-deactivate to protect history
-    existing.status = 'inactive';
-    existing.leftAt = new Date().toISOString();
-    db.save();
-
+    await db.deleteStaff(id);
     res.json({ message: `Staff member ${existing.name} deactivated and preserved in historical records.` });
   } catch (err) {
     res.status(500).json({ error: 'Failed to delete staff member.' });

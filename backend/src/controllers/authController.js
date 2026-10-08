@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { db } from '../db/storage.js';
+import { User } from '../models/User.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'campuscare_super_secret_jwt_key_2026_secure';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
@@ -10,9 +11,9 @@ const createToken = (userId, role) => {
 };
 
 // 1. Student Self-Registration
-export const register = (req, res) => {
+export const register = async (req, res) => {
   try {
-    const { name, email, password, studentId, department, year, hostel } = req.body;
+    const { name, email, password, studentId, department, year, hostel, phone } = req.body;
 
     if (!name || !email || !password) {
       return res.status(400).json({ error: 'Name, email, and password are required.' });
@@ -23,9 +24,12 @@ export const register = (req, res) => {
     }
 
     const normalizedEmail = email.toLowerCase().trim();
-    const existing = db.findUserByEmail(normalizedEmail);
+    const existing =
+      (await db.findUserByEmail(normalizedEmail)) ||
+      (studentId ? await db.findUserByIdentifier(studentId) : null);
+
     if (existing) {
-      return res.status(400).json({ error: 'An account with this email address already exists.' });
+      return res.status(400).json({ error: 'An account with this email address or Student ID already exists.' });
     }
 
     const salt = bcrypt.genSaltSync(10);
@@ -37,15 +41,20 @@ export const register = (req, res) => {
       email: normalizedEmail,
       passwordHash,
       role: 'student',
+      portalRole: 'student',
       studentId: studentId ? studentId.trim() : `STU-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
-      department: department ? department.trim() : 'Undergraduate Studies',
+      phone: phone ? phone.trim() : '',
+      department: department ? department.trim() : 'Computer Science & Engineering',
       year: year ? year.trim() : '1st Year',
       hostel: hostel ? hostel.trim() : 'Day Scholar',
+      enrollmentStatus: 'Enrolled & Verified',
+      registeredBatch: `Academic Year ${new Date().getFullYear()}–${new Date().getFullYear() + 4}`,
+      slaTier: 'Standard Tier (24h)',
       avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}`,
       createdAt: new Date().toISOString()
     };
 
-    db.createUser(newUser);
+    await db.createUser(newUser);
 
     const token = createToken(newUser.id, newUser.role);
     const { passwordHash: _, ...userSafe } = newUser;
@@ -62,7 +71,7 @@ export const register = (req, res) => {
 };
 
 // 2. Universal Login (Student, Staff, Admin)
-export const login = (req, res) => {
+export const login = async (req, res) => {
   try {
     const identifier = req.body.identifier || req.body.email || req.body.studentId;
     const password = req.body.password;
@@ -71,7 +80,7 @@ export const login = (req, res) => {
       return res.status(400).json({ error: 'Email/Student ID and password are required.' });
     }
 
-    const user = db.findUserByIdentifier(identifier);
+    const user = await db.findUserByIdentifier(identifier);
     if (!user) {
       return res.status(401).json({ error: 'Invalid Student ID/email or password.' });
     }
@@ -96,12 +105,12 @@ export const login = (req, res) => {
 };
 
 // 3. Get Current Authenticated Profile
-export const getMe = (req, res) => {
+export const getMe = async (req, res) => {
   res.json({ user: req.user });
 };
 
 // 4. Update Profile
-export const updateProfile = (req, res) => {
+export const updateProfile = async (req, res) => {
   try {
     const userId = req.user.id;
     const { name, phone, department, year, hostel, avatar, designation, bio, emergencyContact } = req.body;
@@ -117,7 +126,7 @@ export const updateProfile = (req, res) => {
     if (bio !== undefined) updates.bio = bio.trim();
     if (emergencyContact !== undefined) updates.emergencyContact = emergencyContact.trim();
 
-    const updated = db.updateUser(userId, updates);
+    const updated = await db.updateUser(userId, updates);
     if (!updated) {
       return res.status(404).json({ error: 'User account not found.' });
     }
@@ -134,7 +143,7 @@ export const updateProfile = (req, res) => {
 };
 
 // 5. Change Password
-export const changePassword = (req, res) => {
+export const changePassword = async (req, res) => {
   try {
     const userId = req.user.id;
     const { currentPassword, newPassword } = req.body;
@@ -143,7 +152,7 @@ export const changePassword = (req, res) => {
       return res.status(400).json({ error: 'New password must be at least 6 characters.' });
     }
 
-    const user = db.findUserById(userId);
+    const user = await db.findUserById(userId);
     if (!user) {
       return res.status(404).json({ error: 'User account not found.' });
     }
@@ -158,7 +167,7 @@ export const changePassword = (req, res) => {
     const salt = bcrypt.genSaltSync(10);
     const passwordHash = bcrypt.hashSync(newPassword, salt);
 
-    db.updateUser(userId, { passwordHash });
+    await db.updateUser(userId, { passwordHash });
 
     res.json({ message: 'Password updated successfully.' });
   } catch (err) {
@@ -167,3 +176,17 @@ export const changePassword = (req, res) => {
   }
 };
 
+// 6. Get All Registered Students (Admin & Staff)
+export const getStudents = async (req, res) => {
+  try {
+    const students = await User.find({ role: 'student' }).select('-passwordHash').lean();
+
+    res.json({
+      count: students.length,
+      students
+    });
+  } catch (err) {
+    console.error('Get students error:', err);
+    res.status(500).json({ error: 'Internal server error while fetching registered students.' });
+  }
+};

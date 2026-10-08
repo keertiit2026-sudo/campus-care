@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import { connectDB } from './config/db.js';
 import { authenticate, requireRole } from './middleware/auth.js';
 import * as authCtrl from './controllers/authController.js';
 import * as complaintsCtrl from './controllers/complaintsController.js';
@@ -42,6 +43,8 @@ app.post('/api/auth/login', authCtrl.login);
 app.get('/api/auth/me', authenticate, authCtrl.getMe);
 app.put('/api/auth/profile', authenticate, authCtrl.updateProfile);
 app.put('/api/auth/password', authenticate, authCtrl.changePassword);
+app.get('/api/students', authenticate, requireRole('admin', 'staff'), authCtrl.getStudents);
+app.get('/api/admin/students', authenticate, requireRole('admin', 'staff'), authCtrl.getStudents);
 
 // --- Complaints Routes ---
 app.get('/api/complaints', authenticate, complaintsCtrl.getComplaints);
@@ -89,7 +92,10 @@ app.use((err, req, res, next) => {
 });
 
 // Start Server
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`🚀 CampusCare REST API Server running at http://localhost:${PORT}`);
   console.log(`✨ Default Admin: ${process.env.ADMIN_EMAIL || 'admin@college.edu'} | Password: ${process.env.ADMIN_PASSWORD || 'admin123'}`);
+  
+  // Test/initialize MongoDB connection if URI is configured in .env
+  await connectDB();
 });

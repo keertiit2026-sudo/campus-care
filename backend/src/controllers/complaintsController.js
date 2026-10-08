@@ -2,40 +2,41 @@ import { db } from '../db/storage.js';
 import { analyzeComplaint } from '../services/complaintIntelligenceService.js';
 
 // 1. List Complaints with Filtering & Search
-export const getComplaints = (req, res) => {
+export const getComplaints = async (req, res) => {
   try {
     const { category, status, priority, search, myOnly } = req.query;
-    let list = db.getComplaints();
+    let list = await db.getComplaints();
 
     // If student requested only their complaints, or default for myOnly param
     if (myOnly === 'true' || (req.user.role === 'student' && myOnly === 'true')) {
-      list = list.filter(c => c.student?.id === req.user.id || c.student?.email === req.user.email);
+      list = list.filter((c) => c.student?.id === req.user.id || c.student?.email === req.user.email);
     }
 
     // Filter Category
     if (category && category !== 'all') {
-      list = list.filter(c => c.category === category);
+      list = list.filter((c) => c.category === category);
     }
 
     // Filter Status
     if (status && status !== 'all') {
-      list = list.filter(c => c.status.toLowerCase() === status.toLowerCase());
+      list = list.filter((c) => c.status.toLowerCase() === status.toLowerCase());
     }
 
     // Filter Priority
     if (priority && priority !== 'all') {
-      list = list.filter(c => c.priority.toLowerCase() === priority.toLowerCase());
+      list = list.filter((c) => c.priority.toLowerCase() === priority.toLowerCase());
     }
 
     // Search Query
     if (search && search.trim()) {
       const q = search.toLowerCase().trim();
-      list = list.filter(c =>
-        c.title.toLowerCase().includes(q) ||
-        c.description.toLowerCase().includes(q) ||
-        c.id.toLowerCase().includes(q) ||
-        c.location.toLowerCase().includes(q) ||
-        c.category.toLowerCase().includes(q)
+      list = list.filter(
+        (c) =>
+          c.title.toLowerCase().includes(q) ||
+          c.description.toLowerCase().includes(q) ||
+          c.id.toLowerCase().includes(q) ||
+          (c.location && c.location.toLowerCase().includes(q)) ||
+          c.category.toLowerCase().includes(q)
       );
     }
 
@@ -47,10 +48,10 @@ export const getComplaints = (req, res) => {
 };
 
 // 2. Get Single Complaint by ID
-export const getComplaintById = (req, res) => {
+export const getComplaintById = async (req, res) => {
   try {
     const { id } = req.params;
-    const complaint = db.findComplaintById(id);
+    const complaint = await db.findComplaintById(id);
     if (!complaint) {
       return res.status(404).json({ error: 'Complaint not found.' });
     }
@@ -61,9 +62,21 @@ export const getComplaintById = (req, res) => {
 };
 
 // 3. Create New Complaint
-export const createComplaint = (req, res) => {
+export const createComplaint = async (req, res) => {
   try {
-    const { title, description, category, priority, location, manualLocation, gpsLocation, locationDetails, coordinates, floorLevel, attachments } = req.body;
+    const {
+      title,
+      description,
+      category,
+      priority,
+      location,
+      manualLocation,
+      gpsLocation,
+      locationDetails,
+      coordinates,
+      floorLevel,
+      attachments
+    } = req.body;
 
     if (!title || !description || !category) {
       return res.status(400).json({ error: 'Title, description, and category are required.' });
@@ -88,7 +101,7 @@ export const createComplaint = (req, res) => {
 
     let intelligenceResult = null;
     try {
-      intelligenceResult = analyzeComplaint({
+      intelligenceResult = await analyzeComplaint({
         title: title.trim(),
         description: description.trim(),
         category,
@@ -107,7 +120,7 @@ export const createComplaint = (req, res) => {
       category,
       priority: priority || 'medium',
       status: 'Submitted',
-      location: (typeof displayLocation === 'string' && displayLocation.trim() ? displayLocation.trim() : 'Campus Location'),
+      location: typeof displayLocation === 'string' && displayLocation.trim() ? displayLocation.trim() : 'Campus Location',
       manualLocation: {
         building: finalManualLocation.building || '',
         floor: finalManualLocation.floor || floorLevel || 'Ground Floor',
@@ -150,7 +163,7 @@ export const createComplaint = (req, res) => {
       intelligence: intelligenceResult
     };
 
-    db.createComplaint(newComplaint);
+    await db.createComplaint(newComplaint);
 
     res.status(201).json({
       message: 'Complaint submitted successfully.',
@@ -163,20 +176,20 @@ export const createComplaint = (req, res) => {
 };
 
 // 4. Triage & Dispatch (Admin / Staff Only)
-export const triageComplaint = (req, res) => {
+export const triageComplaint = async (req, res) => {
   try {
     const { id } = req.params;
     const { status, priority, assignedDepartment, assignedStaff, statusNote, resolutionNotes, resolutionPhoto } = req.body;
 
-    const complaint = db.findComplaintById(id);
+    const complaint = await db.findComplaintById(id);
     if (!complaint) {
       return res.status(404).json({ error: 'Complaint not found.' });
     }
 
     // Enforce resolution note requirement when moving to Resolved
     if (status === 'Resolved' && (!resolutionNotes || resolutionNotes.trim().length < 10)) {
-      return res.status(400).json({ 
-        error: 'A detailed resolution note (at least 10 characters) is required when marking a complaint as Resolved.' 
+      return res.status(400).json({
+        error: 'A detailed resolution note (at least 10 characters) is required when marking a complaint as Resolved.'
       });
     }
 
@@ -196,13 +209,13 @@ export const triageComplaint = (req, res) => {
 
     const isResolved = status === 'Resolved';
 
-    const updated = db.updateComplaint(id, {
+    const updated = await db.updateComplaint(id, {
       status: status || complaint.status,
       priority: priority || complaint.priority,
       assignedDepartment: assignedDepartment !== undefined ? assignedDepartment : complaint.assignedDepartment,
       assignedStaff: assignedStaff !== undefined ? assignedStaff : complaint.assignedStaff,
       resolutionNotes: isResolved ? resolutionNotes.trim() : complaint.resolutionNotes,
-      resolutionPhoto: isResolved ? (resolutionPhoto || complaint.resolutionPhoto) : complaint.resolutionPhoto,
+      resolutionPhoto: isResolved ? resolutionPhoto || complaint.resolutionPhoto : complaint.resolutionPhoto,
       resolvedAt: isResolved ? new Date().toISOString() : complaint.resolvedAt,
       statusHistory: newHistory
     });
@@ -218,7 +231,7 @@ export const triageComplaint = (req, res) => {
 };
 
 // 5. Add Comment to Discussion
-export const addComment = (req, res) => {
+export const addComment = async (req, res) => {
   try {
     const { id } = req.params;
     const { message, isInternal } = req.body;
@@ -227,7 +240,7 @@ export const addComment = (req, res) => {
       return res.status(400).json({ error: 'Comment message cannot be empty.' });
     }
 
-    const complaint = db.findComplaintById(id);
+    const complaint = await db.findComplaintById(id);
     if (!complaint) {
       return res.status(404).json({ error: 'Complaint not found.' });
     }
@@ -242,7 +255,7 @@ export const addComment = (req, res) => {
       isInternal: !!isInternal
     };
 
-    const updated = db.updateComplaint(id, {
+    const updated = await db.updateComplaint(id, {
       comments: [...(complaint.comments || []), newComment]
     });
 
@@ -258,7 +271,7 @@ export const addComment = (req, res) => {
 };
 
 // 6. Submit Satisfaction Rating
-export const submitRating = (req, res) => {
+export const submitRating = async (req, res) => {
   try {
     const { id } = req.params;
     const { rating, feedback } = req.body;
@@ -267,12 +280,24 @@ export const submitRating = (req, res) => {
       return res.status(400).json({ error: 'Rating must be a number between 1 and 5.' });
     }
 
-    const complaint = db.findComplaintById(id);
+    const complaint = await db.findComplaintById(id);
     if (!complaint) {
       return res.status(404).json({ error: 'Complaint not found.' });
     }
 
-    const updated = db.updateComplaint(id, {
+    // Authorization: Verify that the logged-in student is the owner of this complaint
+    const isOwner =
+      (complaint.student?.id && complaint.student.id === req.user.id) ||
+      (complaint.student?.email && req.user.email && complaint.student.email.toLowerCase() === req.user.email.toLowerCase()) ||
+      (complaint.student?.studentId && req.user.studentId && complaint.student.studentId.toLowerCase() === req.user.studentId.toLowerCase());
+
+    if (!isOwner) {
+      return res.status(403).json({
+        error: 'Access denied. You can only submit ratings and feedback for your own reported complaints.'
+      });
+    }
+
+    const updated = await db.updateComplaint(id, {
       rating: Number(rating),
       feedback: feedback ? feedback.trim() : null
     });

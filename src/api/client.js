@@ -88,6 +88,27 @@ export const api = {
     return json;
   },
 
+  async getStudents() {
+    try {
+      const res = await safeFetch(`${API_BASE_URL}/admin/students`, {
+        headers: getAuthHeaders()
+      });
+      const json = await res.json();
+      if (res.ok) return json;
+    } catch (e) {}
+
+    const res = await safeFetch(`${API_BASE_URL}/students`, {
+      headers: getAuthHeaders()
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Failed to fetch registered students');
+    return json;
+  },
+
+  async getAdminStudents() {
+    return this.getStudents();
+  },
+
   // --- Complaints API ---
   async getComplaints(params = {}) {
     const query = new URLSearchParams(params).toString();

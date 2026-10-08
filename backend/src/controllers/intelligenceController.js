@@ -13,16 +13,16 @@ import {
  */
 export const getIntelligenceSummary = async (req, res) => {
   try {
-    const heatmap = getCampusHeatmapData({ timeRange: '30d' });
-    const recurring = detectRecurringProblems({ windowDays: 30 });
-    const complaints = db.getComplaints();
+    const complaints = await db.getComplaints();
+    const heatmap = await getCampusHeatmapData({ timeRange: '30d', complaints });
+    const recurring = await detectRecurringProblems({ windowDays: 30, complaints });
 
-    const urgentPending = complaints.filter(c => {
+    const urgentPending = complaints.filter((c) => {
       const s = (c.status || '').toLowerCase();
       return c.priority === 'urgent' && s !== 'resolved' && s !== 'closed';
     });
 
-    const delayedTickets = complaints.filter(c => {
+    const delayedTickets = complaints.filter((c) => {
       const s = (c.status || '').toLowerCase();
       if (s === 'resolved' || s === 'closed') return false;
       const hours = (new Date() - new Date(c.createdAt)) / (1000 * 60 * 60);
@@ -42,7 +42,7 @@ export const getIntelligenceSummary = async (req, res) => {
           healthyZonesCount: heatmap.kpis.healthyZones
         },
         topHotspots: heatmap.buildings
-          .filter(b => b.totalCount > 0)
+          .filter((b) => b.totalCount > 0)
           .sort((a, b) => b.activeCount - a.activeCount)
           .slice(0, 4),
         recentRecurring: recurring.slice(0, 5),
@@ -67,7 +67,7 @@ export const getIntelligenceSummary = async (req, res) => {
 export const getHeatmap = async (req, res) => {
   try {
     const { category, priority, timeRange } = req.query;
-    const heatmapData = getCampusHeatmapData({ category, priority, timeRange });
+    const heatmapData = await getCampusHeatmapData({ category, priority, timeRange });
     res.json({
       success: true,
       data: heatmapData
@@ -85,12 +85,12 @@ export const getHeatmap = async (req, res) => {
 export const getIntelligenceAlerts = async (req, res) => {
   try {
     const alerts = [];
-    const complaints = db.getComplaints();
-    const recurring = detectRecurringProblems({ windowDays: 30 });
-    const heatmap = getCampusHeatmapData({ timeRange: '30d' });
+    const complaints = await db.getComplaints();
+    const recurring = await detectRecurringProblems({ windowDays: 30, complaints });
+    const heatmap = await getCampusHeatmapData({ timeRange: '30d', complaints });
 
     // 1. Recurring Problem Alerts
-    recurring.forEach(r => {
+    recurring.forEach((r) => {
       alerts.push({
         id: `alert_${r.id}`,
         type: 'recurring_problem',
@@ -105,36 +105,43 @@ export const getIntelligenceAlerts = async (req, res) => {
     });
 
     // 2. High Density Building Hotspots
-    heatmap.buildings.filter(b => b.density === 'high').forEach(b => {
-      alerts.push({
-        id: `alert_density_${b.id}`,
-        type: 'hotspot_density',
-        severity: 'warning',
-        title: `📍 High Complaint Concentration: ${b.name}`,
-        message: `${b.activeCount} active complaints concentrated in ${b.name}. Top category: ${b.topCategory}.`,
-        buildingName: b.name,
-        category: b.topCategory,
-        timestamp: new Date().toISOString(),
-        actionUrl: `/admin/intelligence?building=${encodeURIComponent(b.name)}`
+    heatmap.buildings
+      .filter((b) => b.density === 'high')
+      .forEach((b) => {
+        alerts.push({
+          id: `alert_density_${b.id}`,
+          type: 'hotspot_density',
+          severity: 'warning',
+          title: `📍 High Complaint Concentration: ${b.name}`,
+          message: `${b.activeCount} active complaints concentrated in ${b.name}. Top category: ${b.topCategory}.`,
+          buildingName: b.name,
+          category: b.topCategory,
+          timestamp: new Date().toISOString(),
+          actionUrl: `/admin/intelligence?building=${encodeURIComponent(b.name)}`
+        });
       });
-    });
 
     // 3. Urgent / Safety Hazard Alerts
-    complaints.filter(c => {
-      const s = (c.status || '').toLowerCase();
-      return c.priority === 'urgent' && s !== 'resolved' && s !== 'closed';
-    }).slice(0, 5).forEach(c => {
-      alerts.push({
-        id: `alert_urgent_${c.id}`,
-        type: 'urgent_hazard',
-        severity: 'urgent',
-        title: `⚡ Urgent Safety Flag: ${c.title}`,
-        message: `Safety or infrastructure disruption reported at ${c.location || 'Campus Facility'}. Immediate triage recommended.`,
-        complaintId: c.id,
-        timestamp: c.createdAt,
-        actionUrl: `/admin/triage/${c.id}`
+    complaints
+      .filter((c) => {
+        const s = (c.status || '').toLowerCase();
+        return c.priority === 'urgent' && s !== 'resolved' && s !== 'closed';
+      })
+      .slice(0, 5)
+      .forEach((c) => {
+        alerts.push({
+          id: `alert_urgent_${c.id}`,
+          type: 'urgent_hazard',
+          severity: 'urgent',
+          title: `⚡ Urgent Safety Flag: ${c.title}`,
+          message: `Safety or infrastructure disruption reported at ${
+            c.location || 'Campus Facility'
+          }. Immediate triage recommended.`,
+          complaintId: c.id,
+          timestamp: c.createdAt,
+          actionUrl: `/admin/triage/${c.id}`
+        });
       });
-    });
 
     res.json({
       success: true,
@@ -155,7 +162,7 @@ export const getIntelligenceAlerts = async (req, res) => {
  */
 export const getRecurringProblemsList = async (req, res) => {
   try {
-    const recurring = detectRecurringProblems({ windowDays: 30 });
+    const recurring = await detectRecurringProblems({ windowDays: 30 });
     res.json({
       success: true,
       data: recurring
@@ -173,12 +180,12 @@ export const getRecurringProblemsList = async (req, res) => {
 export const getSimilarForComplaint = async (req, res) => {
   try {
     const { id } = req.params;
-    const complaint = db.findComplaintById(id);
+    const complaint = await db.findComplaintById(id);
     if (!complaint) {
       return res.status(404).json({ success: false, message: 'Complaint not found' });
     }
 
-    const similar = findSimilarComplaints(complaint, { limit: 5 });
+    const similar = await findSimilarComplaints(complaint, { limit: 5 });
     res.json({
       success: true,
       data: {
@@ -200,8 +207,8 @@ export const getSimilarForComplaint = async (req, res) => {
 export const analyzeComplaintPayload = async (req, res) => {
   try {
     const payload = req.body;
-    const analysis = analyzeComplaint(payload);
-    const similar = findSimilarComplaints(payload, { limit: 3 });
+    const analysis = await analyzeComplaint(payload);
+    const similar = await findSimilarComplaints(payload, { limit: 3 });
 
     res.json({
       success: true,
@@ -223,7 +230,7 @@ export const analyzeComplaintPayload = async (req, res) => {
 export const getBuildingAnalysis = async (req, res) => {
   try {
     const { idOrName } = req.params;
-    const deepDive = getBuildingDeepDive(idOrName);
+    const deepDive = await getBuildingDeepDive(idOrName);
 
     if (!deepDive) {
       return res.status(404).json({ success: false, message: 'Building landmark not found' });
@@ -248,11 +255,13 @@ export const linkComplaints = async (req, res) => {
     const { primaryComplaintId, linkedComplaintId, linkType = 'duplicate' } = req.body;
 
     if (!primaryComplaintId || !linkedComplaintId) {
-      return res.status(400).json({ success: false, message: 'Both primaryComplaintId and linkedComplaintId are required' });
+      return res
+        .status(400)
+        .json({ success: false, message: 'Both primaryComplaintId and linkedComplaintId are required' });
     }
 
-    const primary = db.findComplaintById(primaryComplaintId);
-    const linked = db.findComplaintById(linkedComplaintId);
+    const primary = await db.findComplaintById(primaryComplaintId);
+    const linked = await db.findComplaintById(linkedComplaintId);
 
     if (!primary || !linked) {
       return res.status(404).json({ success: false, message: 'One or both complaints not found' });
@@ -261,13 +270,13 @@ export const linkComplaints = async (req, res) => {
     const primaryLinked = primary.linkedComplaintIds || [];
     if (!primaryLinked.includes(linkedComplaintId)) {
       primaryLinked.push(linkedComplaintId);
-      db.updateComplaint(primaryComplaintId, {
+      await db.updateComplaint(primaryComplaintId, {
         linkedComplaintIds: primaryLinked,
         hasLinkedTickets: true
       });
     }
 
-    db.updateComplaint(linkedComplaintId, {
+    await db.updateComplaint(linkedComplaintId, {
       duplicateOf: primaryComplaintId,
       linkType
     });
@@ -276,8 +285,8 @@ export const linkComplaints = async (req, res) => {
       success: true,
       message: `Ticket #${linkedComplaintId} successfully linked to #${primaryComplaintId}`,
       data: {
-        primaryComplaint: db.findComplaintById(primaryComplaintId),
-        linkedComplaint: db.findComplaintById(linkedComplaintId)
+        primaryComplaint: await db.findComplaintById(primaryComplaintId),
+        linkedComplaint: await db.findComplaintById(linkedComplaintId)
       }
     });
   } catch (err) {

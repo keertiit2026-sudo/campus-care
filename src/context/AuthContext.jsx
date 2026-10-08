@@ -5,20 +5,90 @@ const AuthContext = createContext();
 
 const TOKEN_KEY = 'campuscare_jwt_token';
 const USER_KEY = 'campuscare_user_profile';
-const PASSWORDS_KEY = 'campuscare_user_passwords';
+
+const DEFAULT_PRESET_STUDENTS = [
+  {
+    id: 'usr_stu_1790044600000',
+    name: 'Apeksha',
+    email: 'swamyapeksha@gmail.com',
+    studentId: 'STU-2026-APEKSHA',
+    department: 'Computer Science & Engineering',
+    year: '1st Year',
+    hostel: 'Day Scholar',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Apeksha',
+    enrollmentStatus: 'Enrolled & Verified',
+    portalRole: 'student',
+    registeredBatch: 'Academic Year 2025–2029',
+    slaTier: 'Standard Tier (24h)'
+  },
+  {
+    id: 'usr_stu_1790044542789',
+    name: 'kerti',
+    email: 'jcer@2026',
+    studentId: 'cs2025035',
+    department: 'Computer Science & Engineering',
+    year: '1st Year',
+    hostel: 'Day Scholar',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=kerti',
+    enrollmentStatus: 'Enrolled & Verified',
+    portalRole: 'student',
+    registeredBatch: 'Academic Year 2025–2029',
+    slaTier: 'Standard Tier (24h)'
+  },
+  {
+    id: 'usr_student_1',
+    name: 'Priya Sharma',
+    email: 'priya.sharma@college.edu',
+    studentId: 'STU-2024-8841',
+    department: 'Computer Science & Engineering',
+    year: '3rd Year (Semester 5)',
+    hostel: 'Gargi Hall, Room 314',
+    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+    enrollmentStatus: 'Enrolled & Verified',
+    portalRole: 'student',
+    registeredBatch: 'Academic Year 2024–2028',
+    slaTier: 'Standard Tier (24h)'
+  }
+];
 
 export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(() => localStorage.getItem(TOKEN_KEY) || null);
   const [user, setUser] = useState(() => {
     const saved = localStorage.getItem(USER_KEY);
     if (saved) {
-      try { return JSON.parse(saved); } catch (e) {}
+      try {
+        return JSON.parse(saved);
+      } catch (e) {}
     }
     return null;
   });
   const [loading, setLoading] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authModalTab, setAuthModalTab] = useState('login'); // 'login' | 'register'
+
+  // Clean up any legacy insecure password caches from localStorage on initialization
+  useEffect(() => {
+    try {
+      localStorage.removeItem('campuscare_user_passwords');
+      
+      const savedRegistryRaw = localStorage.getItem('campuscare_student_registry_v1');
+      const savedRegistry = savedRegistryRaw ? JSON.parse(savedRegistryRaw) : [];
+      let updated = false;
+
+      DEFAULT_PRESET_STUDENTS.forEach((preset) => {
+        if (!savedRegistry.some((s) => s.email && s.email.toLowerCase() === preset.email.toLowerCase())) {
+          savedRegistry.unshift(preset);
+          updated = true;
+        }
+      });
+
+      if (updated || !savedRegistryRaw) {
+        localStorage.setItem('campuscare_student_registry_v1', JSON.stringify(savedRegistry));
+      }
+    } catch (e) {
+      console.warn('Could not sync default directory in localStorage:', e);
+    }
+  }, []);
 
   // Sync token and user profile
   useEffect(() => {
@@ -37,181 +107,96 @@ export const AuthProvider = ({ children }) => {
     }
   }, [user]);
 
-  // Login handler with resilient offline/demo fallback
+  // Helper to store safe active user profile (without credentials)
+  const persistStudentData = (studentObj) => {
+    if (!studentObj) return studentObj;
+
+    const fullStudent = {
+      id: studentObj.id || `usr_stu_${Date.now()}`,
+      name: studentObj.name || 'Student User',
+      email: (studentObj.email || '').toLowerCase().trim(),
+      role: studentObj.role || 'student',
+      portalRole: studentObj.portalRole || studentObj.role || 'student',
+      studentId:
+        studentObj.studentId ||
+        `STU-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
+      department: studentObj.department || 'Computer Science & Engineering',
+      year: studentObj.year || '1st Year',
+      hostel: studentObj.hostel || 'Day Scholar',
+      enrollmentStatus: studentObj.enrollmentStatus || 'Enrolled & Verified',
+      registeredBatch:
+        studentObj.registeredBatch ||
+        `Academic Year ${new Date().getFullYear()}–${new Date().getFullYear() + 4}`,
+      slaTier: studentObj.slaTier || 'Standard Tier (24h)',
+      avatar:
+        studentObj.avatar ||
+        `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(
+          studentObj.name || 'student'
+        )}`,
+      createdAt: studentObj.createdAt || new Date().toISOString()
+    };
+
+    // Save active user profile (safe profile without passwords)
+    localStorage.setItem(USER_KEY, JSON.stringify(fullStudent));
+
+    // Save/Update in student registry for directory
+    if (fullStudent.role === 'student') {
+      try {
+        const savedRegistryRaw = localStorage.getItem('campuscare_student_registry_v1');
+        const savedRegistry = savedRegistryRaw ? JSON.parse(savedRegistryRaw) : [];
+        const existingIdx = savedRegistry.findIndex(
+          (s) =>
+            (s.email && s.email.toLowerCase() === fullStudent.email.toLowerCase()) ||
+            (s.studentId && s.studentId.toLowerCase() === fullStudent.studentId.toLowerCase())
+        );
+
+        if (existingIdx >= 0) {
+          savedRegistry[existingIdx] = { ...savedRegistry[existingIdx], ...fullStudent };
+        } else {
+          savedRegistry.unshift(fullStudent);
+        }
+        localStorage.setItem('campuscare_student_registry_v1', JSON.stringify(savedRegistry));
+      } catch (e) {
+        console.warn('Could not update student registry:', e);
+      }
+    }
+
+    return fullStudent;
+  };
+
+  // Login handler
   const login = async (email, password) => {
     setLoading(true);
     try {
       const res = await api.login(email, password);
+      const storedUser = persistStudentData(res.user);
       setToken(res.token);
-      setUser(res.user);
+      setUser(storedUser);
       if (res.token) localStorage.setItem(TOKEN_KEY, res.token);
-      if (res.user) localStorage.setItem(USER_KEY, JSON.stringify(res.user));
       setAuthModalOpen(false);
-      return res.user;
+      return storedUser;
     } catch (apiErr) {
-      // Graceful offline/demo mode fallback when backend is not connected
-      console.warn('Backend API login unavailable, using resilient authentication fallback:', apiErr.message);
-      
-      const idLower = (email || '').toLowerCase().trim();
-      const rawId = (email || '').trim();
-      
-      // Load saved passwords
-      const savedPasswords = JSON.parse(localStorage.getItem(PASSWORDS_KEY) || '{}');
-      const savedPass = savedPasswords[idLower] || savedPasswords[rawId] || savedPasswords[rawId.toLowerCase()];
-      if (savedPass && password && savedPass !== password) {
-        throw new Error('Incorrect password. Please verify your password or reset it in Security & Settings.');
-      }
-
-      // Check student registry for pre-registered students or previous registrations
-      let registryStudent = null;
-      try {
-        const savedRegistry = localStorage.getItem('campuscare_student_registry_v1');
-        if (savedRegistry) {
-          const list = JSON.parse(savedRegistry);
-          registryStudent = list.find(s => 
-            (s.email && s.email.toLowerCase() === idLower) ||
-            (s.studentId && s.studentId.toLowerCase() === idLower) ||
-            (s.name && s.name.toLowerCase() === idLower)
-          );
-        }
-      } catch (e) {}
-
-      let matchedUser = null;
-
-      if (idLower === 'admin@college.edu' || idLower === 'dean' || idLower.includes('admin')) {
-        matchedUser = {
-          id: 'usr_admin_1',
-          name: 'Dean Sarah Jenkins',
-          email: 'admin@college.edu',
-          role: 'admin',
-          designation: 'Dean of Campus Infrastructure & Student Welfare',
-          department: 'Campus Administration',
-          avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80'
-        };
-      } else if (idLower === 'alex.chen@college.edu' || idLower.includes('staff') || idLower === 'devin.thorne@college.edu') {
-        matchedUser = {
-          id: 'usr_staff_2',
-          name: 'Devin Thorne',
-          email: 'devin.thorne@college.edu',
-          role: 'staff',
-          departmentId: 'it_services',
-          department: 'IT Services & Network Infrastructure',
-          roleTitle: 'Lead Network Systems Specialist',
-          avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80'
-        };
-      } else if (registryStudent) {
-        // Authenticate as the exact registered student
-        matchedUser = {
-          ...registryStudent,
-          role: registryStudent.portalRole || 'student'
-        };
-      } else {
-        // Dynamic real student registration on first login
-        const studentDisplayName = idLower.includes('@') 
-          ? idLower.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
-          : idLower.startsWith('stu-') ? `Student (${idLower.toUpperCase()})` : idLower;
-        
-        matchedUser = {
-          id: `usr_stu_${Date.now()}`,
-          name: studentDisplayName,
-          email: idLower.includes('@') ? idLower : `${idLower.replace(/\s+/g, '.')}@college.edu`,
-          role: 'student',
-          studentId: idLower.startsWith('stu-') ? idLower.toUpperCase() : `STU-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
-          department: 'Computer Science & Engineering',
-          year: '1st Year',
-          hostel: 'Campus Residence',
-          enrollmentStatus: 'Enrolled & Verified',
-          registeredBatch: `Academic Year ${new Date().getFullYear()}–${new Date().getFullYear() + 4}`,
-          slaTier: 'Standard Tier (24h)',
-          avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(studentDisplayName)}`
-        };
-
-        // Add dynamically created student to registry
-        try {
-          const savedRegistry = JSON.parse(localStorage.getItem('campuscare_student_registry_v1') || '[]');
-          if (!savedRegistry.some(s => s.email === matchedUser.email || s.studentId === matchedUser.studentId)) {
-            savedRegistry.push(matchedUser);
-            localStorage.setItem('campuscare_student_registry_v1', JSON.stringify(savedRegistry));
-          }
-        } catch (e) {}
-      }
-
-      // Save credentials for future logins
-      if (password) {
-        if (matchedUser.email) savedPasswords[matchedUser.email.toLowerCase()] = password;
-        if (matchedUser.studentId) savedPasswords[matchedUser.studentId.toLowerCase()] = password;
-        localStorage.setItem(PASSWORDS_KEY, JSON.stringify(savedPasswords));
-      }
-
-      const mockToken = 'mock_jwt_token_' + Date.now();
-      setToken(mockToken);
-      setUser(matchedUser);
-      localStorage.setItem(TOKEN_KEY, mockToken);
-      localStorage.setItem(USER_KEY, JSON.stringify(matchedUser));
-      setAuthModalOpen(false);
-      return matchedUser;
+      console.warn('Login request failed:', apiErr.message);
+      throw apiErr;
     } finally {
       setLoading(false);
     }
   };
 
-  // Register student handler with resilient offline/demo fallback
+  // Register student handler
   const register = async (studentData) => {
     setLoading(true);
     try {
       const res = await api.register(studentData);
+      const storedUser = persistStudentData(res.user || studentData);
       setToken(res.token);
-      setUser(res.user);
+      setUser(storedUser);
       if (res.token) localStorage.setItem(TOKEN_KEY, res.token);
-      if (res.user) localStorage.setItem(USER_KEY, JSON.stringify(res.user));
-      if (studentData.password) {
-        const savedPasswords = JSON.parse(localStorage.getItem(PASSWORDS_KEY) || '{}');
-        if (studentData.email) savedPasswords[studentData.email.toLowerCase().trim()] = studentData.password;
-        if (studentData.studentId) savedPasswords[studentData.studentId.toLowerCase().trim()] = studentData.password;
-        localStorage.setItem(PASSWORDS_KEY, JSON.stringify(savedPasswords));
-      }
       setAuthModalOpen(false);
-      return res.user;
+      return storedUser;
     } catch (apiErr) {
-      console.warn('Backend API register unavailable, using resilient local registration:', apiErr.message);
-      const newUser = {
-        id: `usr_stu_${Date.now()}`,
-        name: studentData.name,
-        email: studentData.email,
-        studentId: studentData.studentId || `STU-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
-        role: 'student',
-        department: studentData.department || 'Computer Science & Engineering',
-        year: studentData.year || '1st Year',
-        hostel: studentData.hostel || 'Campus Residence',
-        enrollmentStatus: 'Enrolled & Verified',
-        registeredBatch: `Academic Year ${new Date().getFullYear()}–${new Date().getFullYear() + 4}`,
-        slaTier: 'Standard Tier (24h)',
-        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(studentData.name)}`
-      };
-
-      // Add newly registered student to student registry so Admin sees them immediately
-      try {
-        const savedRegistry = JSON.parse(localStorage.getItem('campuscare_student_registry_v1') || '[]');
-        if (!savedRegistry.some(s => s.email === newUser.email || s.studentId === newUser.studentId)) {
-          savedRegistry.unshift(newUser);
-          localStorage.setItem('campuscare_student_registry_v1', JSON.stringify(savedRegistry));
-        }
-      } catch (e) {}
-
-      const mockToken = 'mock_jwt_token_' + Date.now();
-      setToken(mockToken);
-      setUser(newUser);
-      localStorage.setItem(TOKEN_KEY, mockToken);
-      localStorage.setItem(USER_KEY, JSON.stringify(newUser));
-      
-      if (studentData.password) {
-        const savedPasswords = JSON.parse(localStorage.getItem(PASSWORDS_KEY) || '{}');
-        if (studentData.email) savedPasswords[studentData.email.toLowerCase().trim()] = studentData.password;
-        if (studentData.studentId) savedPasswords[studentData.studentId.toLowerCase().trim()] = studentData.password;
-        localStorage.setItem(PASSWORDS_KEY, JSON.stringify(savedPasswords));
-      }
-      setAuthModalOpen(false);
-      return newUser;
+      console.warn('Registration request failed:', apiErr.message);
+      throw apiErr;
     } finally {
       setLoading(false);
     }
@@ -228,7 +213,7 @@ export const AuthProvider = ({ children }) => {
           updatedUser = { ...updatedUser, ...res.user };
         }
       } catch (apiErr) {
-        console.warn('Backend API updateProfile unavailable, saving profile locally:', apiErr.message);
+        console.warn('Backend API updateProfile error:', apiErr.message);
       }
       setUser(updatedUser);
       localStorage.setItem(USER_KEY, JSON.stringify(updatedUser));
@@ -242,25 +227,11 @@ export const AuthProvider = ({ children }) => {
   const changePassword = async (currentPassword, newPassword) => {
     setLoading(true);
     try {
-      const idLower = (user?.email || '').toLowerCase().trim();
-      const savedPasswords = JSON.parse(localStorage.getItem(PASSWORDS_KEY) || '{}');
-      const savedPass = savedPasswords[idLower];
-      
-      if (savedPass && currentPassword && savedPass !== currentPassword) {
-        throw new Error('Current password is incorrect. Please verify your current password.');
-      }
-
-      try {
-        await api.changePassword(currentPassword, newPassword);
-      } catch (apiErr) {
-        console.warn('Backend API changePassword unavailable, handled locally:', apiErr.message);
-      }
-
-      if (idLower) {
-        savedPasswords[idLower] = newPassword;
-        localStorage.setItem(PASSWORDS_KEY, JSON.stringify(savedPasswords));
-      }
+      await api.changePassword(currentPassword, newPassword);
       return true;
+    } catch (apiErr) {
+      console.error('Password change error:', apiErr.message);
+      throw apiErr;
     } finally {
       setLoading(false);
     }

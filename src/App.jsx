@@ -107,6 +107,7 @@ const MainLayout = () => {
             <Route path="/complaints/new" element={<ProtectedRoute><ComplaintSubmissionPage /></ProtectedRoute>} />
             <Route path="/complaints/:id" element={<ProtectedRoute><ComplaintDetailPage /></ProtectedRoute>} />
             <Route path="/departments" element={<ProtectedRoute><DepartmentsView /></ProtectedRoute>} />
+            <Route path="/students" element={<ProtectedRoute allowedRoles={['admin', 'staff']}><ProfilePage /></ProtectedRoute>} />
 
             {/* Admin & Staff Only Restricted Routes */}
             <Route path="/admin/triage/:id" element={

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useApp } from '../../context/AppContext';
+import { api } from '../../api/client';
 import {
   User,
   Mail,
@@ -294,6 +295,7 @@ export const convertImageToDataUrl = (imageUrl, maxWidth = 400, maxHeight = 400)
 
 export const ProfilePage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const fileInputRef = useRef(null);
   const { user, updateProfile, changePassword, logout } = useAuth();
   const { 
@@ -309,7 +311,18 @@ export const ProfilePage = () => {
   const isStaffOrAdmin = isAdmin || isStaff;
   const isStudent = !isStaffOrAdmin;
 
-  const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'tickets' | 'security'
+  const searchParams = new URLSearchParams(location.search);
+  const initialTab = searchParams.get('tab') || (location.pathname === '/students' ? 'students' : 'overview');
+  const [activeTab, setActiveTab] = useState(initialTab);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tabParam = params.get('tab') || (location.pathname === '/students' ? 'students' : null);
+    if (tabParam) {
+      setActiveTab(tabParam);
+    }
+  }, [location.search, location.pathname]);
+
   const [isEditing, setIsEditing] = useState(false);
   const [isEditingCredentials, setIsEditingCredentials] = useState(false);
   const [savingCredentials, setSavingCredentials] = useState(false);
@@ -407,6 +420,20 @@ export const ProfilePage = () => {
         slaTier: 'Standard Tier (24h)'
       },
       {
+        id: 'usr_stu_1790044600000',
+        name: 'Apeksha',
+        email: 'swamyapeksha@gmail.com',
+        studentId: 'STU-2026-APEKSHA',
+        department: 'Computer Science & Engineering',
+        year: '1st Year',
+        hostel: 'Day Scholar',
+        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Apeksha',
+        enrollmentStatus: 'Enrolled & Verified',
+        portalRole: 'student',
+        registeredBatch: 'Academic Year 2025–2029',
+        slaTier: 'Standard Tier (24h)'
+      },
+      {
         id: 'usr_stu_1789998395896',
         name: 'Test Student',
         email: 'test.student@college.edu',
@@ -422,6 +449,38 @@ export const ProfilePage = () => {
       }
     ];
   });
+
+  const [syncingStudents, setSyncingStudents] = useState(false);
+
+  // Fetch all live registered students from the central server/cloud API so Admin sees every student from any device
+  const fetchCloudStudents = async (showToast = false) => {
+    setSyncingStudents(true);
+    try {
+      const res = await api.getStudents();
+      if (res && Array.isArray(res.students)) {
+        setStudentRegistry(res.students);
+        try {
+          localStorage.setItem('campuscare_student_registry_v1', JSON.stringify(res.students));
+        } catch (e) {}
+        if (showToast) {
+          addToast({ type: 'success', message: `Synced ${res.students.length} registered students from central database!` });
+        }
+      }
+    } catch (err) {
+      console.warn('Central students directory sync notice:', err.message);
+      if (showToast) {
+        addToast({ type: 'error', message: 'Could not sync from database: ' + err.message });
+      }
+    } finally {
+      setSyncingStudents(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isStaffOrAdmin) {
+      fetchCloudStudents(false);
+    }
+  }, [isStaffOrAdmin]);
 
   const [selectedStudentForEdit, setSelectedStudentForEdit] = useState(null);
   const [editingStudentData, setEditingStudentData] = useState(null);
@@ -2433,6 +2492,18 @@ export const ProfilePage = () => {
                 </div>
                 <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 700 }}>Graduated Alumni</div>
               </div>
+
+              <button
+                type="button"
+                onClick={() => fetchCloudStudents(true)}
+                disabled={syncingStudents}
+                className="btn btn-secondary"
+                style={{ gap: '8px', padding: '10px 16px', fontWeight: 700, borderRadius: '12px', backgroundColor: '#ffffff' }}
+                title="Fetch live registered students from backend central database"
+              >
+                <RefreshCw size={16} className={syncingStudents ? 'animate-spin' : ''} />
+                <span>{syncingStudents ? 'Syncing...' : 'Sync Live DB'}</span>
+              </button>
 
               <button
                 type="button"

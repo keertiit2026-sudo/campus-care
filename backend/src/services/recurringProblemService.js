@@ -16,14 +16,14 @@ export const identifyBuilding = (location) => {
   }
 
   // Common keywords matching
-  if (norm.includes('turing') || norm.includes('cs ') || norm.includes('lab 3')) return INTELLIGENCE_CONFIG.CAMPUS_BUILDINGS.find(b => b.id === 'bld_turing');
-  if (norm.includes('science') || norm.includes('lh-') || norm.includes('hall')) return INTELLIGENCE_CONFIG.CAMPUS_BUILDINGS.find(b => b.id === 'bld_science');
-  if (norm.includes('library') || norm.includes('reading')) return INTELLIGENCE_CONFIG.CAMPUS_BUILDINGS.find(b => b.id === 'bld_library');
-  if (norm.includes('gargi') || norm.includes('hostel') || norm.includes('dorm')) return INTELLIGENCE_CONFIG.CAMPUS_BUILDINGS.find(b => b.id === 'bld_hostel_gargi');
-  if (norm.includes('sac') || norm.includes('canteen') || norm.includes('cafeteria')) return INTELLIGENCE_CONFIG.CAMPUS_BUILDINGS.find(b => b.id === 'bld_sac');
-  if (norm.includes('admin') || norm.includes('registry') || norm.includes('dean')) return INTELLIGENCE_CONFIG.CAMPUS_BUILDINGS.find(b => b.id === 'bld_admin');
-  if (norm.includes('workshop') || norm.includes('engineering') || norm.includes('mech')) return INTELLIGENCE_CONFIG.CAMPUS_BUILDINGS.find(b => b.id === 'bld_engineering');
-  if (norm.includes('transport') || norm.includes('bus') || norm.includes('gate 3')) return INTELLIGENCE_CONFIG.CAMPUS_BUILDINGS.find(b => b.id === 'bld_transport');
+  if (norm.includes('turing') || norm.includes('cs ') || norm.includes('lab 3')) return INTELLIGENCE_CONFIG.CAMPUS_BUILDINGS.find((b) => b.id === 'bld_turing');
+  if (norm.includes('science') || norm.includes('lh-') || norm.includes('hall')) return INTELLIGENCE_CONFIG.CAMPUS_BUILDINGS.find((b) => b.id === 'bld_science');
+  if (norm.includes('library') || norm.includes('reading')) return INTELLIGENCE_CONFIG.CAMPUS_BUILDINGS.find((b) => b.id === 'bld_library');
+  if (norm.includes('gargi') || norm.includes('hostel') || norm.includes('dorm')) return INTELLIGENCE_CONFIG.CAMPUS_BUILDINGS.find((b) => b.id === 'bld_hostel_gargi');
+  if (norm.includes('sac') || norm.includes('canteen') || norm.includes('cafeteria')) return INTELLIGENCE_CONFIG.CAMPUS_BUILDINGS.find((b) => b.id === 'bld_sac');
+  if (norm.includes('admin') || norm.includes('registry') || norm.includes('dean')) return INTELLIGENCE_CONFIG.CAMPUS_BUILDINGS.find((b) => b.id === 'bld_admin');
+  if (norm.includes('workshop') || norm.includes('engineering') || norm.includes('mech')) return INTELLIGENCE_CONFIG.CAMPUS_BUILDINGS.find((b) => b.id === 'bld_engineering');
+  if (norm.includes('transport') || norm.includes('bus') || norm.includes('gate 3')) return INTELLIGENCE_CONFIG.CAMPUS_BUILDINGS.find((b) => b.id === 'bld_transport');
 
   return null;
 };
@@ -47,15 +47,15 @@ export const extractZone = (location) => {
 /**
  * Detect recurring problem clusters across campus
  */
-export const detectRecurringProblems = (options = {}) => {
+export const detectRecurringProblems = async (options = {}) => {
   const windowDays = options.windowDays || INTELLIGENCE_CONFIG.RECURRING_PERIOD_DAYS;
   const minThreshold = options.minThreshold || INTELLIGENCE_CONFIG.RECURRING_COMPLAINT_THRESHOLD;
 
-  const allComplaints = db.getComplaints();
+  const allComplaints = options.complaints || (await db.getComplaints());
   const now = new Date();
 
   // Filter complaints in window
-  const windowComplaints = allComplaints.filter(c => {
+  const windowComplaints = allComplaints.filter((c) => {
     if (!c.createdAt) return true;
     const date = new Date(c.createdAt);
     const diffDays = (now - date) / (1000 * 60 * 60 * 24);
@@ -65,9 +65,9 @@ export const detectRecurringProblems = (options = {}) => {
   // Group by (Building + Zone + Category)
   const clusters = {};
 
-  windowComplaints.forEach(c => {
+  windowComplaints.forEach((c) => {
     const building = identifyBuilding(c.location);
-    const buildingName = building ? building.name : (c.location ? String(c.location).split(',')[0] : 'Campus Facility');
+    const buildingName = building ? building.name : c.location ? String(c.location).split(',')[0] : 'Campus Facility';
     const zone = extractZone(c.location);
     const category = c.category || 'other';
 
@@ -100,8 +100,8 @@ export const detectRecurringProblems = (options = {}) => {
 
   // Filter clusters meeting threshold
   const recurringPatterns = Object.values(clusters)
-    .filter(cl => cl.complaints.length >= minThreshold)
-    .map(cl => {
+    .filter((cl) => cl.complaints.length >= minThreshold)
+    .map((cl) => {
       const count = cl.complaints.length;
       let severity = 'warning';
       if (count >= 4 || cl.openCount >= 3) {
@@ -128,7 +128,7 @@ export const detectRecurringProblems = (options = {}) => {
         severity,
         reasons,
         suggestedAction: `Investigate the underlying ${categoryLabel.toLowerCase()} infrastructure at ${cl.zone}.`,
-        complaintIds: cl.complaints.map(c => c.id),
+        complaintIds: cl.complaints.map((c) => c.id),
         latestReportedAt: cl.complaints[0]?.createdAt || now.toISOString()
       };
     })
@@ -140,9 +140,9 @@ export const detectRecurringProblems = (options = {}) => {
 /**
  * Generate Campus Heatmap aggregations with filters
  */
-export const getCampusHeatmapData = (filters = {}) => {
+export const getCampusHeatmapData = async (filters = {}) => {
   const { category, priority, timeRange } = filters;
-  const allComplaints = db.getComplaints();
+  const allComplaints = filters.complaints || (await db.getComplaints());
   const now = new Date();
 
   let windowDays = 30;
@@ -150,7 +150,7 @@ export const getCampusHeatmapData = (filters = {}) => {
   else if (timeRange === '90d') windowDays = 90;
   else if (timeRange === 'all') windowDays = 3650;
 
-  const filteredComplaints = allComplaints.filter(c => {
+  const filteredComplaints = allComplaints.filter((c) => {
     if (category && category !== 'all' && c.category !== category) return false;
     if (priority && priority !== 'all' && c.priority !== priority) return false;
 
@@ -165,7 +165,7 @@ export const getCampusHeatmapData = (filters = {}) => {
   const buildingsMap = {};
 
   // Initialize presets
-  INTELLIGENCE_CONFIG.CAMPUS_BUILDINGS.forEach(bld => {
+  INTELLIGENCE_CONFIG.CAMPUS_BUILDINGS.forEach((bld) => {
     buildingsMap[bld.id] = {
       ...bld,
       totalCount: 0,
@@ -179,7 +179,7 @@ export const getCampusHeatmapData = (filters = {}) => {
     };
   });
 
-  filteredComplaints.forEach(comp => {
+  filteredComplaints.forEach((comp) => {
     const identified = identifyBuilding(comp.location);
     const bldId = identified ? identified.id : 'bld_turing';
 
@@ -207,7 +207,7 @@ export const getCampusHeatmapData = (filters = {}) => {
     }
   });
 
-  const buildingNodes = Object.values(buildingsMap).map(b => {
+  const buildingNodes = Object.values(buildingsMap).map((b) => {
     let density = 'low';
     if (b.activeCount >= INTELLIGENCE_CONFIG.HIGH_DENSITY_THRESHOLD || b.urgentCount >= 2) {
       density = 'high';
@@ -231,23 +231,23 @@ export const getCampusHeatmapData = (filters = {}) => {
   });
 
   const totalComplaints = filteredComplaints.length;
-  const activeComplaints = filteredComplaints.filter(c => {
+  const activeComplaints = filteredComplaints.filter((c) => {
     const st = (c.status || '').toLowerCase();
     return st !== 'resolved' && st !== 'closed';
   }).length;
-  const criticalHotspots = buildingNodes.filter(b => b.density === 'high').length;
-  const recurringIssues = detectRecurringProblems({ windowDays }).length;
+  const criticalHotspots = buildingNodes.filter((b) => b.density === 'high').length;
+  const recurringList = await detectRecurringProblems({ windowDays, complaints: allComplaints });
 
   return {
     kpis: {
       totalComplaints,
       activeComplaints,
       criticalHotspots,
-      recurringIssues,
-      healthyZones: buildingNodes.filter(b => b.density === 'low').length
+      recurringIssues: recurringList.length,
+      healthyZones: buildingNodes.filter((b) => b.density === 'low').length
     },
     buildings: buildingNodes,
-    recurringIssuesList: detectRecurringProblems({ windowDays }).slice(0, 8),
+    recurringIssuesList: recurringList.slice(0, 8),
     lastUpdated: new Date().toISOString()
   };
 };
@@ -255,26 +255,27 @@ export const getCampusHeatmapData = (filters = {}) => {
 /**
  * Get detailed deep-dive intelligence for a single building
  */
-export const getBuildingDeepDive = (buildingIdOrName) => {
-  const heatmap = getCampusHeatmapData({ timeRange: 'all' });
+export const getBuildingDeepDive = async (buildingIdOrName) => {
+  const heatmap = await getCampusHeatmapData({ timeRange: 'all' });
   const normalizedSearch = String(buildingIdOrName).toLowerCase();
 
-  const building = heatmap.buildings.find(b =>
-    b.id.toLowerCase() === normalizedSearch ||
-    b.name.toLowerCase().includes(normalizedSearch) ||
-    b.code.toLowerCase() === normalizedSearch
+  const building = heatmap.buildings.find(
+    (b) =>
+      b.id.toLowerCase() === normalizedSearch ||
+      b.name.toLowerCase().includes(normalizedSearch) ||
+      b.code.toLowerCase() === normalizedSearch
   );
 
   if (!building) return null;
 
-  const recurringInBuilding = heatmap.recurringIssuesList.filter(r =>
-    r.buildingId === building.id || r.buildingName.toLowerCase() === building.name.toLowerCase()
+  const recurringInBuilding = heatmap.recurringIssuesList.filter(
+    (r) => r.buildingId === building.id || r.buildingName.toLowerCase() === building.name.toLowerCase()
   );
 
   let totalHours = 0;
   let resolvedWithTimeCount = 0;
 
-  building.complaints.forEach(c => {
+  building.complaints.forEach((c) => {
     if (c.status === 'resolved' && c.resolvedAt && c.createdAt) {
       const hours = (new Date(c.resolvedAt) - new Date(c.createdAt)) / (1000 * 60 * 60);
       if (hours > 0) {
@@ -284,7 +285,8 @@ export const getBuildingDeepDive = (buildingIdOrName) => {
     }
   });
 
-  const avgResolutionHours = resolvedWithTimeCount > 0 ? Number((totalHours / resolvedWithTimeCount).toFixed(1)) : 4.2;
+  const avgResolutionHours =
+    resolvedWithTimeCount > 0 ? Number((totalHours / resolvedWithTimeCount).toFixed(1)) : 4.2;
 
   return {
     building,

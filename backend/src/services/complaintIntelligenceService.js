@@ -76,7 +76,7 @@ const HIGH_TRIGGERS = [
 /**
  * Perform Natural Language analysis on a complaint title, description, and location
  */
-export const analyzeComplaint = (complaint) => {
+export const analyzeComplaint = async (complaint) => {
   const title = (complaint.title || '').toLowerCase();
   const description = (complaint.description || '').toLowerCase();
   const location = (typeof complaint.location === 'object' ? JSON.stringify(complaint.location) : (complaint.location || '')).toLowerCase();
@@ -124,7 +124,12 @@ export const analyzeComplaint = (complaint) => {
   const deptInfo = CATEGORY_DEPARTMENT_MAP[bestCategory] || CATEGORY_DEPARTMENT_MAP.other;
 
   // 4. Assign Recommended Technician (first active staff in department)
-  const staffList = (typeof db.getStaffMembers === 'function' ? db.getStaffMembers('active') : (db.getStaff ? db.getStaff('active') : [])) || [];
+  let staffList = [];
+  try {
+    staffList = (await db.getStaffMembers('active')) || [];
+  } catch {
+    staffList = [];
+  }
   const matchedStaff = staffList.find(s => (s.departmentId === deptInfo.id || s.department === deptInfo.id) && (s.status || 'active') === 'active') || null;
 
   // 5. Build Transparent Reasons
