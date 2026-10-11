@@ -29,7 +29,10 @@ export const AdminLoginPage = () => {
         navigate('/dashboard');
       }, 400);
     } catch (err) {
-      setError(err.message || 'Administrative authentication failed. Check credentials.');
+      const msg = err?.message && /abort|timeout|signal/i.test(err.message)
+        ? 'The server took too long to respond. The backend may be waking up from sleep (cold start). Please wait 10 seconds and try again.'
+        : (err?.message || 'Administrative authentication failed. Check credentials.');
+      setError(msg);
     }
   };
 

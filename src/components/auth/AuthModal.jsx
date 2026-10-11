@@ -55,7 +55,10 @@ export const AuthModal = () => {
       setLoginEmail('');
       setLoginPassword('');
     } catch (err) {
-      setError(err.message || 'Login failed. Check your email and password.');
+      const msg = err?.message && /abort|timeout|signal/i.test(err.message)
+        ? 'The server took too long to respond. The backend may be waking up from sleep (cold start). Please wait 10 seconds and try again.'
+        : (err?.message || 'Login failed. Check your email and password.');
+      setError(msg);
     }
   };
 
@@ -77,7 +80,10 @@ export const AuthModal = () => {
       setPassword('');
       setStudentId('');
     } catch (err) {
-      setError(err.message || 'Registration failed.');
+      const msg = err?.message && /abort|timeout|signal/i.test(err.message)
+        ? 'The server took too long to respond. The backend may be waking up from sleep (cold start). Please wait 10 seconds and try again.'
+        : (err?.message || 'Registration failed.');
+      setError(msg);
     }
   };
 

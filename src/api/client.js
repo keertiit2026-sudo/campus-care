@@ -1,16 +1,49 @@
-const rawBaseUrl = import.meta.env.VITE_API_URL || 'https://campus-care-backend-6acz.onrender.com/api';
+const rawBaseUrl = import.meta.env.VITE_API_URL || 'https://campus-care-backend-2026.onrender.com/api';
 const API_BASE_URL = rawBaseUrl.endsWith('/') ? rawBaseUrl.slice(0, -1) : rawBaseUrl;
 
 // Check if running in an HTTPS production environment where http://localhost is unreachable
 const isHttpsProd = typeof window !== 'undefined' && window.location.protocol === 'https:' && API_BASE_URL.startsWith('http://localhost');
 
-async function safeFetch(url, options = {}, timeoutMs = 8000) {
+async function safeFetch(url, options = {}, timeoutMs = 60000) {
   if (isHttpsProd && url.startsWith('http://localhost')) {
-    throw new Error('Localhost API server is not reachable over HTTPS in cloud deployment.');
+    throw new Error('Localhost API server is not reachable over HTTPS in cloud deployment. Please configure VITE_API_URL in your hosting platform.');
   }
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  let isTimeout = false;
+
+  const timeoutId = setTimeout(() => {
+    isTimeout = true;
+    try {
+      controller.abort(new DOMException('Request timed out', 'TimeoutError'));
+    } catch (_) {
+      try {
+        controller.abort();
+      } catch (__) {}
+    }
+  }, timeoutMs);
+
+  // Link caller signal if provided (preserves caller cancellation)
+  let onCallerAbort = null;
+  if (options.signal) {
+    if (options.signal.aborted) {
+      clearTimeout(timeoutId);
+      try {
+        controller.abort(options.signal.reason);
+      } catch (_) {
+        controller.abort();
+      }
+    } else {
+      onCallerAbort = () => {
+        try {
+          controller.abort(options.signal.reason);
+        } catch (_) {
+          controller.abort();
+        }
+      };
+      options.signal.addEventListener('abort', onCallerAbort, { once: true });
+    }
+  }
 
   try {
     const res = await fetch(url, {
@@ -18,11 +51,63 @@ async function safeFetch(url, options = {}, timeoutMs = 8000) {
       signal: controller.signal
     });
     clearTimeout(timeoutId);
+    if (options.signal && onCallerAbort) {
+      options.signal.removeEventListener('abort', onCallerAbort);
+    }
     return res;
   } catch (err) {
     clearTimeout(timeoutId);
+    if (options.signal && onCallerAbort) {
+      options.signal.removeEventListener('abort', onCallerAbort);
+    }
+
+    // If caller explicitly cancelled the request, propagate that cancellation
+    if (options.signal?.aborted) {
+      throw err;
+    }
+
+    // Provide friendly, descriptive messages for abort/timeout or network disconnection
+    const isAbortOrTimeout = 
+      isTimeout ||
+      err.name === 'AbortError' || 
+      err.name === 'TimeoutError' || 
+      (typeof err.message === 'string' && /abort|timeout|signal is aborted/i.test(err.message));
+
+    if (isAbortOrTimeout) {
+      throw new Error(
+        'Server took too long to respond. The cloud backend is likely waking up from sleep (Render free tier cold start takes ~30 seconds). Please wait a moment and try again.'
+      );
+    }
+
+    if (err.message === 'Failed to fetch' || err.name === 'TypeError') {
+      throw new Error(
+        'Unable to reach the CampusCare server. Please check your internet connection or verify the backend is online.'
+      );
+    }
+
     throw err;
   }
+}
+
+async function parseJsonResponse(res, defaultError = 'Request failed') {
+  let json;
+  try {
+    json = await res.json();
+  } catch {
+    if (!res.ok) {
+      throw new Error(`Server returned error ${res.status}: ${res.statusText || 'Unable to process request'}`);
+    }
+    throw new Error('Invalid response received from server.');
+  }
+
+  if (!res.ok) {
+    const err = new Error(json?.error || json?.message || defaultError);
+    if (json?.openCount !== undefined) err.openCount = json.openCount;
+    if (json?.openTickets !== undefined) err.openTickets = json.openTickets;
+    throw err;
+  }
+
+  return json;
 }
 
 const getAuthHeaders = () => {
@@ -41,9 +126,7 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error || 'Registration failed');
-    return json;
+    return parseJsonResponse(res, 'Registration failed');
   },
 
   async login(identifier, password) {
@@ -52,18 +135,14 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ identifier, email: identifier, password })
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error || 'Login failed');
-    return json;
+    return parseJsonResponse(res, 'Login failed');
   },
 
   async getMe() {
     const res = await safeFetch(`${API_BASE_URL}/auth/me`, {
       headers: getAuthHeaders()
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error || 'Failed to fetch session profile');
-    return json;
+    return parseJsonResponse(res, 'Failed to fetch session profile');
   },
 
   async updateProfile(data) {
@@ -72,9 +151,7 @@ export const api = {
       headers: getAuthHeaders(),
       body: JSON.stringify(data)
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error || 'Failed to update profile');
-    return json;
+    return parseJsonResponse(res, 'Failed to update profile');
   },
 
   async changePassword(currentPassword, newPassword) {
@@ -83,9 +160,7 @@ export const api = {
       headers: getAuthHeaders(),
       body: JSON.stringify({ currentPassword, newPassword })
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error || 'Failed to change password');
-    return json;
+    return parseJsonResponse(res, 'Failed to change password');
   },
 
   async getStudents() {
@@ -93,16 +168,16 @@ export const api = {
       const res = await safeFetch(`${API_BASE_URL}/admin/students`, {
         headers: getAuthHeaders()
       });
-      const json = await res.json();
-      if (res.ok) return json;
-    } catch (e) {}
+      const json = await parseJsonResponse(res, 'Failed to fetch registered students');
+      return json;
+    } catch (e) {
+      // Fallback to /students endpoint
+    }
 
     const res = await safeFetch(`${API_BASE_URL}/students`, {
       headers: getAuthHeaders()
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error || 'Failed to fetch registered students');
-    return json;
+    return parseJsonResponse(res, 'Failed to fetch registered students');
   },
 
   async getAdminStudents() {
@@ -115,8 +190,7 @@ export const api = {
     const res = await safeFetch(`${API_BASE_URL}/complaints?${query}`, {
       headers: getAuthHeaders()
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error || 'Failed to fetch complaints');
+    const json = await parseJsonResponse(res, 'Failed to fetch complaints');
     return json.complaints || [];
   },
 
@@ -126,8 +200,7 @@ export const api = {
       headers: getAuthHeaders(),
       body: JSON.stringify(data)
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error || 'Failed to submit complaint');
+    const json = await parseJsonResponse(res, 'Failed to submit complaint');
     return json.complaint;
   },
 
@@ -135,8 +208,7 @@ export const api = {
     const res = await safeFetch(`${API_BASE_URL}/complaints/${id}`, {
       headers: getAuthHeaders()
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error || 'Failed to fetch complaint');
+    const json = await parseJsonResponse(res, 'Failed to fetch complaint');
     return json.complaint;
   },
 
@@ -146,8 +218,7 @@ export const api = {
       headers: getAuthHeaders(),
       body: JSON.stringify(data)
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error || 'Failed to update complaint triage');
+    const json = await parseJsonResponse(res, 'Failed to update complaint triage');
     return json.complaint;
   },
 
@@ -157,8 +228,7 @@ export const api = {
       headers: getAuthHeaders(),
       body: JSON.stringify({ message, isInternal })
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error || 'Failed to post comment');
+    const json = await parseJsonResponse(res, 'Failed to post comment');
     return json.complaint;
   },
 
@@ -168,8 +238,7 @@ export const api = {
       headers: getAuthHeaders(),
       body: JSON.stringify({ rating, feedback })
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error || 'Failed to submit rating');
+    const json = await parseJsonResponse(res, 'Failed to submit rating');
     return json.complaint;
   },
 
@@ -178,8 +247,7 @@ export const api = {
     const res = await safeFetch(`${API_BASE_URL}/departments`, {
       headers: getAuthHeaders()
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error || 'Failed to fetch departments');
+    const json = await parseJsonResponse(res, 'Failed to fetch departments');
     return json.departments || [];
   },
 
@@ -189,8 +257,7 @@ export const api = {
       headers: getAuthHeaders(),
       body: JSON.stringify(data)
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error || 'Failed to update department');
+    const json = await parseJsonResponse(res, 'Failed to update department');
     return json.department;
   },
 
@@ -199,8 +266,7 @@ export const api = {
     const res = await safeFetch(`${API_BASE_URL}/staff?${query}`, {
       headers: getAuthHeaders()
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error || 'Failed to fetch staff');
+    const json = await parseJsonResponse(res, 'Failed to fetch staff');
     return json.staff || [];
   },
 
@@ -208,8 +274,7 @@ export const api = {
     const res = await safeFetch(`${API_BASE_URL}/staff/${id}`, {
       headers: getAuthHeaders()
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error || 'Failed to fetch staff member');
+    const json = await parseJsonResponse(res, 'Failed to fetch staff member');
     return json.staff;
   },
 
@@ -217,9 +282,7 @@ export const api = {
     const res = await safeFetch(`${API_BASE_URL}/staff/${id}/open-tickets`, {
       headers: getAuthHeaders()
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error || 'Failed to fetch staff open tickets');
-    return json;
+    return parseJsonResponse(res, 'Failed to fetch staff open tickets');
   },
 
   async createStaff(data) {
@@ -228,8 +291,7 @@ export const api = {
       headers: getAuthHeaders(),
       body: JSON.stringify(data)
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error || 'Failed to add staff member');
+    const json = await parseJsonResponse(res, 'Failed to add staff member');
     return json.staff;
   },
 
@@ -239,8 +301,7 @@ export const api = {
       headers: getAuthHeaders(),
       body: JSON.stringify(data)
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error || 'Failed to update staff member');
+    const json = await parseJsonResponse(res, 'Failed to update staff member');
     return json.staff;
   },
 
@@ -250,9 +311,7 @@ export const api = {
       headers: getAuthHeaders(),
       body: JSON.stringify(data)
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error || 'Failed to replace staff and transfer tickets');
-    return json;
+    return parseJsonResponse(res, 'Failed to replace staff and transfer tickets');
   },
 
   async replaceStaff(data) {
@@ -265,14 +324,7 @@ export const api = {
       headers: getAuthHeaders(),
       body: JSON.stringify(options)
     });
-    const json = await res.json();
-    if (!res.ok) {
-      const err = new Error(json.error || 'Failed to deactivate staff member');
-      err.openCount = json.openCount;
-      err.openTickets = json.openTickets;
-      throw err;
-    }
-    return json;
+    return parseJsonResponse(res, 'Failed to deactivate staff member');
   },
 
   async reactivateStaff(id) {
@@ -280,9 +332,7 @@ export const api = {
       method: 'POST',
       headers: getAuthHeaders()
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error || 'Failed to reactivate staff member');
-    return json;
+    return parseJsonResponse(res, 'Failed to reactivate staff member');
   },
 
   async deleteStaff(id, transferToStaffId = null) {
@@ -291,9 +341,7 @@ export const api = {
       method: 'DELETE',
       headers: getAuthHeaders()
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error || 'Failed to remove staff member');
-    return json;
+    return parseJsonResponse(res, 'Failed to remove staff member');
   },
 
   // --- Analytics ---
@@ -301,8 +349,7 @@ export const api = {
     const res = await safeFetch(`${API_BASE_URL}/analytics`, {
       headers: getAuthHeaders()
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error || 'Failed to fetch analytics');
+    const json = await parseJsonResponse(res, 'Failed to fetch analytics');
     return json.stats;
   },
 
@@ -312,9 +359,7 @@ export const api = {
     const res = await safeFetch(`${API_BASE_URL}/intelligence/summary?${query}`, {
       headers: getAuthHeaders()
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error || 'Failed to fetch intelligence summary');
-    return json;
+    return parseJsonResponse(res, 'Failed to fetch intelligence summary');
   },
 
   async getHeatmapData(params = {}) {
@@ -322,9 +367,7 @@ export const api = {
     const res = await safeFetch(`${API_BASE_URL}/intelligence/heatmap?${query}`, {
       headers: getAuthHeaders()
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error || 'Failed to fetch heatmap data');
-    return json;
+    return parseJsonResponse(res, 'Failed to fetch heatmap data');
   },
 
   async getIntelligenceAlerts(params = {}) {
@@ -332,8 +375,7 @@ export const api = {
     const res = await safeFetch(`${API_BASE_URL}/intelligence/alerts?${query}`, {
       headers: getAuthHeaders()
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error || 'Failed to fetch intelligence alerts');
+    const json = await parseJsonResponse(res, 'Failed to fetch intelligence alerts');
     return json.alerts || json.data || [];
   },
 
@@ -342,8 +384,7 @@ export const api = {
     const res = await safeFetch(`${API_BASE_URL}/intelligence/recurring-problems?${query}`, {
       headers: getAuthHeaders()
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error || 'Failed to fetch recurring problems');
+    const json = await parseJsonResponse(res, 'Failed to fetch recurring problems');
     return json.recurringProblems || json.data || json.recurring || [];
   },
 
@@ -351,9 +392,7 @@ export const api = {
     const res = await safeFetch(`${API_BASE_URL}/intelligence/similar/${id}`, {
       headers: getAuthHeaders()
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error || 'Failed to fetch similar complaints');
-    return json;
+    return parseJsonResponse(res, 'Failed to fetch similar complaints');
   },
 
   async analyzeComplaintDraft(data) {
@@ -362,8 +401,7 @@ export const api = {
       headers: getAuthHeaders(),
       body: JSON.stringify(data)
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error || 'Failed to run complaint analysis');
+    const json = await parseJsonResponse(res, 'Failed to run complaint analysis');
     return json.intelligence;
   },
 
@@ -371,9 +409,7 @@ export const api = {
     const res = await safeFetch(`${API_BASE_URL}/intelligence/building/${encodeURIComponent(buildingIdOrName)}`, {
       headers: getAuthHeaders()
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error || 'Failed to fetch building intelligence');
-    return json;
+    return parseJsonResponse(res, 'Failed to fetch building intelligence');
   },
 
   async linkComplaints(primaryId, linkedIds, note = '') {
@@ -382,9 +418,6 @@ export const api = {
       headers: getAuthHeaders(),
       body: JSON.stringify({ primaryId, linkedIds, note })
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error || 'Failed to link complaints');
-    return json;
+    return parseJsonResponse(res, 'Failed to link complaints');
   }
 };
-

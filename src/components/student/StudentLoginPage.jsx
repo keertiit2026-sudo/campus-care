@@ -76,7 +76,10 @@ export const StudentLoginPage = ({ defaultTab = 'login' }) => {
       await login(identifier.trim(), loginPassword);
       navigate('/dashboard');
     } catch (err) {
-      setError(err.message || 'Login failed. Please verify your Student ID and password.');
+      const msg = err?.message && /abort|timeout|signal/i.test(err.message)
+        ? 'The server took too long to respond. The backend may be waking up from sleep (cold start). Please wait 10 seconds and try again.'
+        : (err?.message || 'Login failed. Please verify your Student ID and password.');
+      setError(msg);
     }
   };
 
@@ -102,7 +105,10 @@ export const StudentLoginPage = ({ defaultTab = 'login' }) => {
       });
       navigate('/dashboard');
     } catch (err) {
-      setError(err.message || 'Registration failed. Please check your details.');
+      const msg = err?.message && /abort|timeout|signal/i.test(err.message)
+        ? 'The server took too long to respond. The backend may be waking up from sleep (cold start). Please wait 10 seconds and try again.'
+        : (err?.message || 'Registration failed. Please check your details.');
+      setError(msg);
     }
   };
 
